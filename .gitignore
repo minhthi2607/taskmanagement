@@ -46,3 +46,8 @@ Thumbs.db
 ### Cấu hình nhạy cảm (nếu ai đó tạo file config riêng chứa mật khẩu DB/mail cá nhân) ###
 application-local.yaml
 application-local.properties
+
+### AI Tools & Custom Configurations ###
+.agents/
+.claude/
+skills-lock.json

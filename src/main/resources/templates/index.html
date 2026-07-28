@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      layout:decorate="~{layout/main}">
+<head>
+    <title>Trang chủ - Không gian làm việc</title>
+</head>
+<body>
+
+    <!-- Nội dung chính Trang chủ (Story #1) -->
+    <div layout:fragment="content">
+        
+        <!-- Header phần Body -->
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <div>
+                <h3 class="fw-bold mb-1">Không gian làm việc</h3>
+                <p class="text-muted mb-0">Quản lý các bảng công việc và nhóm làm việc của bạn</p>
+            </div>
+            <!-- Nút Tạo nhóm nhanh (Story #10 Placeholder trigger) -->
+            <button class="btn btn-primary d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#createTeamModal">
+                <i class="bi bi-plus-lg"></i>
+                <span>Tạo nhóm mới</span>
+            </button>
+        </div>
+
+        <!-- ==================================================================================== -->
+        <!-- KHUNG 1: DANH SÁCH BẢNG TỰ TẠO (PHÂN LOẠI THEO NHÓM) - Story #1                      -->
+        <!-- ==================================================================================== -->
+        <section class="mb-5">
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <i class="bi bi-person-workspace text-primary fs-4"></i>
+                <h5 class="fw-bold m-0">Danh sách bảng tự tạo</h5>
+                <span class="badge bg-primary-subtle text-primary rounded-pill">Quản trị</span>
+            </div>
+
+            <!-- 
+                COMMENT HƯỚNG DẪN DÀNH CHO SPRINT 2 / CÁC BẠN GHÉP DATA:
+                Dùng th:each="teamGroup : ${createdTeamsWithBoards}" để lặp danh sách nhóm mà User tự tạo:
+                
+                <div th:each="teamGroup : ${createdTeamsWithBoards}" class="card border-0 bg-white shadow-sm mb-4">
+                    <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center pt-3 px-3">
+                        <h6 class="fw-bold m-0 text-dark">
+                            <i class="bi bi-people-fill me-2 text-primary"></i>
+                            <span th:text="${teamGroup.team.name}">Tên Nhóm Tự Tạo</span>
+                        </h6>
+                        <a th:href="@{/team/{id}(id=${teamGroup.team.id})}" class="btn btn-sm btn-light">Xem chi tiết nhóm</a>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div th:each="board : ${teamGroup.boards}" class="col-12 col-sm-6 col-md-4 col-lg-3">
+                                <a th:href="@{/board/{id}(id=${board.id})}" class="board-card">
+                                    <div class="board-card-banner bg-gradient-blue"></div>
+                                    <h6 class="board-card-title" th:text="${board.name}">Tên Bảng</h6>
+                                    <div class="board-card-meta">
+                                        <span><i class="bi bi-clock me-1"></i>Vừa cập nhật</span>
+                                    </div>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            -->
+
+            <!-- Placeholder UI Visual cho Khung 1 (Tự tạo) -->
+            <div class="card border-0 bg-white shadow-sm mb-4">
+                <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center pt-3 px-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-folder-fill text-primary fs-5"></i>
+                        <h6 class="fw-bold m-0 text-dark">Nhóm: Dev Team (Quản trị)</h6>
+                    </div>
+                    <a href="#team1" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-gear me-1"></i> Quản lý nhóm
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <!-- Card Bảng 1 -->
+                        <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                            <a href="#" class="board-card">
+                                <div class="board-card-banner bg-gradient-blue"></div>
+                                <h6 class="board-card-title">Sprint 1 - Foundation Architecture</h6>
+                                <div class="board-card-meta">
+                                    <span><i class="bi bi-kanban me-1"></i>Board #1</span>
+                                    <span class="badge bg-secondary-subtle text-secondary">Dev Team</span>
+                                </div>
+                            </a>
+                        </div>
+                        <!-- Card Bảng 2 -->
+                        <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                            <a href="#" class="board-card">
+                                <div class="board-card-banner bg-gradient-purple"></div>
+                                <h6 class="board-card-title">Backend REST & Security Setup</h6>
+                                <div class="board-card-meta">
+                                    <span><i class="bi bi-kanban me-1"></i>Board #2</span>
+                                    <span class="badge bg-secondary-subtle text-secondary">Dev Team</span>
+                                </div>
+                            </a>
+                        </div>
+                        <!-- Card Tạo bảng mới (Placeholder Sprint 2) -->
+                        <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                            <a href="#" class="board-card add-board-card">
+                                <i class="bi bi-plus-lg fs-4"></i>
+                                <span>Tạo bảng mới</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- ==================================================================================== -->
+        <!-- KHUNG 2: DANH SÁCH BẢNG ĐƯỢC GÁN LÀM THÀNH VIÊN (PHÂN LOẠI THEO NHÓM) - Story #1    -->
+        <!-- ==================================================================================== -->
+        <section class="mb-4">
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <i class="bi bi-people text-success fs-4"></i>
+                <h5 class="fw-bold m-0">Danh sách bảng được gán làm thành viên</h5>
+                <span class="badge bg-success-subtle text-success rounded-pill">Thành viên</span>
+            </div>
+
+            <!-- 
+                COMMENT HƯỚNG DẪN DÀNH CHO SPRINT 2 / CÁC BẠN GHÉP DATA:
+                Dùng th:each="teamGroup : ${joinedTeamsWithBoards}" để lặp danh sách nhóm mà User tham gia với vai trò MEMBER:
+                
+                <div th:each="teamGroup : ${joinedTeamsWithBoards}" class="card border-0 bg-white shadow-sm mb-4">
+                    ...
+                </div>
+            -->
+
+            <!-- Placeholder UI Visual cho Khung 2 (Được gán) -->
+            <div class="card border-0 bg-white shadow-sm mb-4">
+                <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center pt-3 px-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-folder-fill text-success fs-5"></i>
+                        <h6 class="fw-bold m-0 text-dark">Nhóm: Design & UX Team (Thành viên)</h6>
+                    </div>
+                    <a href="#team2" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-eye me-1"></i> Xem thông tin nhóm
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <!-- Card Bảng được gán 1 -->
+                        <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                            <a href="#" class="board-card">
+                                <div class="board-card-banner bg-gradient-green"></div>
+                                <h6 class="board-card-title">UI Design System & Component Guidelines</h6>
+                                <div class="board-card-meta">
+                                    <span><i class="bi bi-kanban me-1"></i>Board #3</span>
+                                    <span class="badge bg-success-subtle text-success">Design Team</span>
+                                </div>
+                            </a>
+                        </div>
+                        <!-- Card Bảng được gán 2 -->
+                        <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                            <a href="#" class="board-card">
+                                <div class="board-card-banner bg-gradient-orange"></div>
+                                <h6 class="board-card-title">Marketing Landing Page Assets</h6>
+                                <div class="board-card-meta">
+                                    <span><i class="bi bi-kanban me-1"></i>Board #4</span>
+                                    <span class="badge bg-success-subtle text-success">Design Team</span>
+                                </div>
+                            </a>
+                        </div>
+                        <!-- Card Tạo bảng mới (Dành cho Thành viên tạo bảng thuộc nhóm này) -->
+                        <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                            <a href="#" class="board-card add-board-card">
+                                <i class="bi bi-plus-lg fs-4"></i>
+                                <span>Tạo bảng mới</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+
+        <!-- ==================================================================================== -->
+        <!-- MODAL PLACEHOLDER: TẠO NHÓM MỚI (Dành cho Thành ghép logic Story #10)                 -->
+        <!-- ==================================================================================== -->
+        <div class="modal fade" id="createTeamModal" tabindex="-1" aria-labelledby="createTeamModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title fw-bold" id="createTeamModalLabel">Tạo nhóm mới</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <!-- Form cho Thành ghép th:action và th:object (Story #10) -->
+                    <form th:action="@{/team/create}" method="post">
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label for="teamName" class="form-label">Tên nhóm <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="teamName" name="name" placeholder="Nhập tên nhóm..." required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="teamType" class="form-label">Loại nhóm <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="teamType" name="type" placeholder="VD: Kỹ thuật, Marketing, Thiết kế..." required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="teamVisibility" class="form-label">Quyền riêng tư <span class="text-danger">*</span></label>
+                                <select class="form-select" id="teamVisibility" name="visibility" required>
+                                    <option value="PRIVATE" selected>Riêng tư (Chỉ thành viên trong nhóm mới truy cập được)</option>
+                                    <option value="PUBLIC">Công khai (Bất kỳ ai có liên kết đều nhìn thấy)</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="teamDescription" class="form-label">Mô tả nhóm</label>
+                                <textarea class="form-control" id="teamDescription" name="description" rows="3" placeholder="Mô tả mục đích của nhóm..."></textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                            <button type="submit" class="btn btn-primary">Tạo nhóm</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>
