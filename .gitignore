@@ -35,3 +35,14 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### OS ###
+.DS_Store
+Thumbs.db
+
+### Logs ###
+*.log
+
+### Cấu hình nhạy cảm (nếu ai đó tạo file config riêng chứa mật khẩu DB/mail cá nhân) ###
+application-local.yaml
+application-local.properties
