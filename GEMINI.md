@@ -59,12 +59,61 @@ src/main/resources/
 | Session lưu user đăng nhập | thống nhất tên | `SESSION_USER` |
 **Lưu ý quan trọng**: Không đặt tên entity là `Group` vì đây là từ khoá dành riêng (reserved keyword) trong MySQL. Dùng `Team` thay cho khái niệm "Nhóm".
 
-## 5. Entity chính (Sprint 1)
-- **User**: id, email (unique), displayName, phone, password (mã hoá BCrypt), avatarUrl, createdAt
-- **Team**: id, name, type, visibility (`PUBLIC`/`PRIVATE`), description, createdBy, createdAt
-- **TeamMember** (bảng trung gian User–Team, chứa quyền theo từng Team): id, teamId, userId, role (`ADMIN`/`MEMBER`), joinedAt
-- **Board** (chuẩn bị cho Sprint 2): id, teamId, name, createdBy, createdAt
-- **Invitation** (mời thành viên qua email): id, teamId, email, role, token, status (`PENDING`/`ACCEPTED`/`EXPIRED`), createdAt
+## 5. Entity chính (Sprint 1) — Chi tiết field
+
+> Các bảng dưới đây là đặc tả chi tiết field cho từng Entity. Khi sinh code JPA Entity, dùng đúng tên field, kiểu dữ liệu và ghi chú (not null, unique, FK, default...) như mô tả.
+
+### 5.1 User
+| Field | Kiểu | Ghi chú |
+|---|---|---|
+| id | Long | PK |
+| email | String | unique, not null |
+| displayName | String | not null |
+| phone | String | |
+| password | String | not null, mã hoá BCrypt |
+| avatarUrl | String | |
+| createdAt | LocalDateTime | |
+
+### 5.2 Team (Nhóm)
+| Field | Kiểu | Ghi chú |
+|---|---|---|
+| id | Long | PK |
+| name | String | not null |
+| type | String | loại nhóm |
+| visibility | Enum (`PUBLIC`, `PRIVATE`) | not null |
+| description | String | |
+| createdBy | Long (FK → User) | id người tạo, tự động là Quản trị |
+| createdAt | LocalDateTime | |
+
+### 5.3 TeamMember (bảng trung gian User – Team)
+| Field | Kiểu | Ghi chú |
+|---|---|---|
+| id | Long | PK |
+| teamId | Long (FK → Team) | |
+| userId | Long (FK → User) | |
+| role | Enum (`ADMIN`, `MEMBER`) | Quản trị nhóm / Thành viên |
+| joinedAt | LocalDateTime | |
+
+### 5.4 Board (Bảng — dùng cho story #19, chuẩn bị trước cho Sprint 2)
+| Field | Kiểu | Ghi chú |
+|---|---|---|
+| id | Long | PK |
+| teamId | Long (FK → Team) | |
+| name | String | |
+| createdBy | Long (FK → User) | |
+| createdAt | LocalDateTime | |
+
+### 5.5 Invitation (lời mời thành viên qua email — story #16)
+| Field | Kiểu | Ghi chú |
+|---|---|---|
+| id | Long | PK |
+| teamId | Long (FK → Team) | |
+| email | String | email người được mời |
+| role | Enum (`ADMIN`, `MEMBER`) | quyền được gán khi tham gia |
+| token | String | mã xác nhận trong link mời |
+| status | Enum (`PENDING`, `ACCEPTED`, `EXPIRED`) | |
+| createdAt | LocalDateTime | |
+
 **Quan trọng về phân quyền**: Quyền Quản trị nhóm / Thành viên là quyền **theo từng Team cụ thể**, lưu trong `TeamMember.role`, KHÔNG phải role toàn hệ thống của Spring Security. Spring Security (`UserPrincipal.getAuthorities()`) chỉ xác nhận "đã đăng nhập" (`ROLE_USER`). Muốn biết 1 user có phải Quản trị của 1 Team cụ thể hay không, phải query `TeamMemberRepository` trong Service, không dùng `hasRole()`.
 
 ## 6. Luồng đăng nhập & Thymeleaf Security
@@ -73,6 +122,7 @@ src/main/resources/
 ```java
 @AuthenticationPrincipal UserPrincipal principal
 User currentUser = principal.getUser();
+```
 Trong Thymeleaf Header:
 Ẩn/hiện theo trạng thái đăng nhập:
 Khi ĐÃ ĐĂNG NHẬP (sec:authorize="isAuthenticated()"): Hiện Tên người dùng (sec:authentication="principal.user.displayName"), Avatar, Nút Đăng xuất.
