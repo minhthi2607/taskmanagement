@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+    <!-- Menu trái Fragment (Story #3) -->
+    <aside th:fragment="sidebar" id="sidebarMenu" class="app-sidebar collapse d-md-block">
+        <div class="sidebar-nav d-flex flex-column h-100">
+
+            <!-- Top Option: Bảng -->
+            <ul class="nav nav-pills flex-column mb-3">
+                <li class="nav-item">
+                    <a th:href="@{/}" class="nav-link active">
+                        <i class="bi bi-kanban fs-5"></i>
+                        <span>Bảng</span>
+                    </a>
+                </li>
+            </ul>
+
+            <hr class="my-2">
+
+            <!-- Section Title & Action: Danh sách các nhóm & Nút Tạo nhóm -->
+            <div class="d-flex align-items-center justify-content-between px-2 mb-2">
+                <span class="sidebar-section-title m-0">Các nhóm của bạn</span>
+                <!-- Nút "Tạo nhóm" (Story #10 - Trigger modal tạo nhóm) -->
+                <button type="button" 
+                        class="btn btn-sm btn-light rounded-circle text-primary p-1" 
+                        data-bs-toggle="modal" 
+                        data-bs-target="#createTeamModal" 
+                        title="Tạo nhóm mới">
+                    <i class="bi bi-plus-lg fs-6"></i>
+                </button>
+            </div>
+
+            <!-- Danh sách các nhóm của người dùng (Sorted Alphabetically - Story #14) -->
+            <div class="flex-grow-1 overflow-auto">
+                <ul class="nav nav-pills flex-column">
+                    <!-- 
+                        COMMENT HƯỚNG DẪN CHO THÀNH / HƯỚNG (Story #14):
+                        Đổ danh sách nhóm đã tạo hoặc đã tham dự của user (sắp xếp Alphabet):
+                        <li class="nav-item" th:each="team : ${userTeamsAlphabetical}">
+                            <a class="nav-link" th:href="@{/team/{id}(id=${team.id})}">
+                                <i class="bi bi-people-fill text-secondary"></i>
+                                <span th:text="${team.name}">Tên Nhóm</span>
+                            </a>
+                        </li>
+                    -->
+                    
+                    <!-- Placeholder UI nhóm mẫu -->
+                    <li class="nav-item">
+                        <a href="#team1" class="nav-link">
+                            <i class="bi bi-people-fill text-primary"></i>
+                            <span class="text-truncate">Dev Team</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#team2" class="nav-link">
+                            <i class="bi bi-people-fill text-success"></i>
+                            <span class="text-truncate">Design & UX Team</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#team3" class="nav-link">
+                            <i class="bi bi-people-fill text-warning"></i>
+                            <span class="text-truncate">Marketing Campaign</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Bottom Section: Quick Button "Tạo nhóm mới" -->
+            <div class="pt-3 border-top mt-auto">
+                <button type="button" 
+                        class="btn btn-outline-primary btn-sm w-100 d-flex align-items-center justify-content-center gap-2" 
+                        data-bs-toggle="modal" 
+                        data-bs-target="#createTeamModal">
+                    <i class="bi bi-plus-circle"></i>
+                    <span>Tạo nhóm mới</span>
+                </button>
+            </div>
+
+        </div>
+    </aside>
+
+</body>
+</html>
