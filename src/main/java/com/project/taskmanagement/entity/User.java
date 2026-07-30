@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "users")
@@ -32,6 +34,10 @@ public class User {
     private String avatarUrl;
 
     private LocalDateTime createdAt;
+
+    @Builder.Default
+    @OneToMany(mappedBy = "user")
+    private List<TeamMember> teamMembers = new ArrayList<>();
 
     @PrePersist
     public void prePersist() {
