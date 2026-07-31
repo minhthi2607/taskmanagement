@@ -28,9 +28,9 @@ public class SecurityConfig {
                 // TODO: [REVIEWER] Bật lại CSRF trước khi merge - tạm tắt để team code layout/demo
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                // Các đường dẫn công khai: trang chủ (cho khách xem nhóm Công khai),
+                // Các đường dẫn công khai: trang chủ, tạo/xem nhóm (để team dễ chạy demo),
                 // trang đăng ký/đăng nhập, css/js, ảnh upload
-                .requestMatchers("/", "/auth/**", "/css/**", "/js/**", "/uploads/**").permitAll()
+                .requestMatchers("/", "/auth/**", "/team/**", "/css/**", "/js/**", "/uploads/**").permitAll()
                 .anyRequest().authenticated()
         )
                 .formLogin(form -> form
