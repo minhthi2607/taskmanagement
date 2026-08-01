@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}">
+<head>
+    <title>Thông tin cá nhân</title>
+</head>
+<body>
+
+<div layout:fragment="content">
+    <div class="container-fluid py-3">
+        <div class="row justify-content-center">
+            <div class="col-12 col-md-10 col-lg-8">
+                <div class="d-flex align-items-center justify-content-between mb-4">
+                    <div>
+                        <h3 class="fw-bold mb-1"><i class="bi bi-person-badge-fill text-primary me-2"></i>Thông tin cá nhân</h3>
+                        <p class="text-muted mb-0">Xem và cập nhật thông tin hồ sơ tài khoản của bạn</p>
+                    </div>
+                </div>
+
+                <!-- Thông báo thành công -->
+                <div class="alert alert-success alert-dismissible fade show" role="alert" th:if="${successMessage}">
+                    <i class="bi bi-check-circle-fill me-2"></i>
+                    <span th:text="${successMessage}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+
+                <!-- Thông báo lỗi chung -->
+                <div class="alert alert-danger alert-dismissible fade show" role="alert" th:if="${errorMessage}">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    <span th:text="${errorMessage}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+
+                <!-- Card Hồ sơ cá nhân -->
+                <div class="card border-0 shadow-sm rounded-3">
+                    <div class="card-body p-4">
+                        <form th:action="@{/user/profile}" th:object="${userProfileDto}" method="post" enctype="multipart/form-data" novalidate>
+
+                            <!-- Khung Upload Avatar -->
+                            <div class="d-flex flex-column flex-sm-row align-items-center gap-4 mb-4 pb-3 border-bottom">
+                                <div>
+                                    <img id="avatarPreview"
+                                         th:src="${userProfileDto.avatarUrl != null and !userProfileDto.avatarUrl.isBlank() ? userProfileDto.avatarUrl : 'https://via.placeholder.com/100?text=Avatar'}"
+                                         alt="Avatar"
+                                         class="rounded-circle border"
+                                         style="width: 100px; height: 100px; object-fit: cover;">
+                                </div>
+                                <div>
+                                    <h6 class="fw-bold mb-1">Ảnh đại diện</h6>
+                                    <p class="text-muted small mb-2">Định dạng hỗ trợ: JPG, PNG, WEBP. Dung lượng đề xuất &lt; 2MB.</p>
+                                    <input type="file" id="avatarFile" name="avatarFile" class="form-control form-control-sm" accept="image/*" onchange="previewImage(this)">
+                                </div>
+                            </div>
+
+                            <!-- Email  -->
+                            <div class="mb-3">
+                                <label for="email" class="form-label fw-semibold">
+                                    Địa chỉ Email <span class="text-muted font-normal">(Không thể thay đổi)</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light"><i class="bi bi-envelope-fill text-muted"></i></span>
+                                    <input type="email"
+                                           id="email"
+                                           th:field="*{email}"
+                                           class="form-control bg-light text-muted"
+                                           readonly>
+                                </div>
+                            </div>
+
+                            <!-- Tên hiển thị -->
+                            <div class="mb-3">
+                                <label for="displayName" class="form-label fw-semibold">
+                                    Tên hiển thị <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-person"></i></span>
+                                    <input type="text"
+                                           id="displayName"
+                                           th:field="*{displayName}"
+                                           class="form-control"
+                                           th:classappend="${#fields.hasErrors('displayName')} ? 'is-invalid' : ''"
+                                           placeholder="Vui lòng nhập tên hiển thị"
+                                           required>
+                                    <div class="invalid-feedback" th:if="${#fields.hasErrors('displayName')}" th:errors="*{displayName}"></div>
+                                </div>
+                            </div>
+
+                            <!-- Số điện thoại -->
+                            <div class="mb-4">
+                                <label for="phone" class="form-label fw-semibold">Số điện thoại</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-telephone"></i></span>
+                                    <input type="tel"
+                                           id="phone"
+                                           th:field="*{phone}"
+                                           class="form-control"
+                                           th:classappend="${#fields.hasErrors('phone')} ? 'is-invalid' : ''"
+                                           placeholder="Ví dụ: 0912345678 (tùy chọn)">
+                                    <div class="invalid-feedback" th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}"></div>
+                                </div>
+                            </div>
+
+
+                            <div class="d-flex gap-2 justify-content-end">
+                                <a th:href="@{/}" class="btn btn-light px-4">Hủy bỏ</a>
+                                <button type="submit" class="btn btn-primary px-4 fw-semibold">
+                                    <i class="bi bi-save me-1"></i> Lưu thông tin
+                                </button>
+                            </div>
+
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<th:block layout:fragment="scripts">
+    <script>
+        function previewImage(input) {
+            if (input && input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('avatarPreview').src = e.target.result;
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+    </script>
+</th:block>
+
+</body>
+</html>

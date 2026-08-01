@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}">
+<head>
+    <title>Đăng nhập - Task Management</title>
+</head>
+<body>
+
+<div layout:fragment="content" class="container py-5">
+
+    <div class="row justify-content-center">
+        <div class="col-12 col-sm-10 col-md-8 col-lg-5 col-xl-4">
+
+
+            <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+                <i class="bi bi-check-circle-fill me-2"></i>
+                <span th:text="${successMessage}">Đăng ký thành công</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+
+            <div th:if="${logout}" class="alert alert-info alert-dismissible fade show shadow-sm" role="alert">
+                <i class="bi bi-info-circle-fill me-2"></i>
+                <span>Bạn đã đăng xuất thành công.</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+
+            <div th:if="${error}" class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <span>Email hoặc mật khẩu không chính xác!</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+
+            <!-- Card Container -->
+            <div class="card border-0 shadow-sm mb-4">
+
+                <!-- Header -->
+                <div class="card-header bg-transparent border-0 text-center pt-4 px-4 pb-2">
+                    <div class="bg-primary text-white rounded-3 d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 56px; height: 56px;">
+                        <i class="bi bi-kanban-fill fs-3"></i>
+                    </div>
+                    <h4 class="fw-bold m-0 text-dark">Đăng nhập</h4>
+                    <p class="text-muted small mt-2 mb-0">Vui lòng nhập email và mật khẩu của bạn</p>
+                </div>
+
+                <!-- Body -->
+                <div class="card-body p-4">
+                    <form th:action="@{/auth/login}" method="post">
+
+                        <!-- Email -->
+                        <div class="mb-3">
+                            <label for="email" class="form-label fw-bold text-muted small text-uppercase">Địa chỉ Email <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-secondary border-end-0"><i class="bi bi-envelope"></i></span>
+                                <input type="email" id="email" name="email" th:value="${email}" class="form-control border-start-0 ps-0" placeholder="vi-du@domain.com" required autofocus>
+                            </div>
+                        </div>
+
+                        <!-- Mật khẩu -->
+                        <div class="mb-4">
+                            <label for="password" class="form-label fw-bold text-muted small text-uppercase">Mật khẩu <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-secondary border-end-0"><i class="bi bi-lock"></i></span>
+                                <input type="password" id="password" name="password" class="form-control border-start-0 ps-0 border-end-0" placeholder="Nhập mật khẩu" required>
+                                <button class="btn btn-outline-secondary border-start-0 text-muted" type="button" onclick="togglePasswordVisibility('password', 'toggleIcon')">
+                                    <i class="bi bi-eye" id="toggleIcon"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Nút Submit -->
+                        <button type="submit" class="btn btn-primary w-100 py-2 d-flex align-items-center justify-content-center gap-2">
+                            <i class="bi bi-box-arrow-in-right"></i>
+                            <span>Đăng nhập</span>
+                        </button>
+
+                        <!-- Link đăng ký -->
+                        <div class="text-center mt-4 pt-3 border-top">
+                            <span class="text-muted small">Chưa có tài khoản?</span>
+                            <a th:href="@{/auth/register}" class="text-primary fw-semibold small text-decoration-none ms-1">Đăng ký ngay</a>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        function togglePasswordVisibility(inputId, iconId) {
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById(iconId);
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.replace('bi-eye', 'bi-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.replace('bi-eye-slash', 'bi-eye');
+            }
+        }
+    </script>
+</div>
+
+</body>
+</html>
