@@ -33,8 +33,8 @@ public class TeamServiceImpl implements TeamService {
 
         // 1. Lưu thông tin Nhóm
         Team team = Team.builder()
-                .name(dto.getName().trim())
-                .type(dto.getType().trim())
+                .name(dto.getName() != null ? dto.getName().trim() : null)
+                .type(dto.getType() != null ? dto.getType().trim() : null)
                 .visibility(dto.getVisibility())
                 .description(dto.getDescription() != null ? dto.getDescription().trim() : null)
                 .createdBy(currentUser.getId())
@@ -66,7 +66,7 @@ public class TeamServiceImpl implements TeamService {
     @Override
     @Transactional(readOnly = true)
     public List<Team> getAllTeamsAlphabetical() {
-        return teamRepository.findByVisibilityOrderByNameAsc(Visibility.PUBLIC);
+        return teamRepository.findAllByOrderByNameAsc();
     }
 
     @Override

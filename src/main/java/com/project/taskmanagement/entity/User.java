@@ -46,11 +46,4 @@ public class User {
         }
     }
 
-    public boolean isSystemAdmin() {
-        if (this.email == null) {
-            return false;
-        }
-        String cleanEmail = this.email.trim().toLowerCase();
-        return cleanEmail.equals("admin@taskmanagement.com") || cleanEmail.startsWith("admin");
-    }
 }

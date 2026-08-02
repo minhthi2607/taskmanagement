@@ -75,11 +75,7 @@ public class TeamController {
     public String listTeams(@AuthenticationPrincipal UserPrincipal principal, Model model) {
         List<Team> teams;
         if (principal != null && principal.getUser() != null) {
-            if (principal.getUser().isSystemAdmin()) {
-                teams = teamService.getAllTeamsAlphabetical();
-            } else {
-                teams = teamService.getUserTeamsAlphabetical(principal.getUser().getId());
-            }
+            teams = teamService.getUserTeamsAlphabetical(principal.getUser().getId());
         } else {
             teams = teamService.getPublicTeamsAlphabetical();
         }
@@ -98,18 +94,14 @@ public class TeamController {
         try {
             Team team = teamService.getTeamById(id);
             Long currentUserId = (principal != null && principal.getUser() != null) ? principal.getUser().getId() : null;
-            boolean isSystemAdmin = principal != null && principal.getUser() != null && principal.getUser().isSystemAdmin();
+            boolean isMember = currentUserId != null && teamService.isUserMemberOfTeam(id, currentUserId);
+            boolean isAdmin = currentUserId != null && teamService.isUserAdminOfTeam(id, currentUserId);
 
             // Kiểm tra quyền truy cập nếu là nhóm PRIVATE
-            if (team.getVisibility() == Visibility.PRIVATE) {
-                if (currentUserId == null || !teamService.isUserMemberOfTeam(id, currentUserId)) {
-                    redirectAttributes.addFlashAttribute("errorMessage", "Bạn không có quyền truy cập nhóm riêng tư này!");
-                    return "redirect:/team/list";
-                }
+            if (team.getVisibility() == Visibility.PRIVATE && !isMember) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Bạn không có quyền truy cập nhóm riêng tư này!");
+                return "redirect:/team/list";
             }
-
-            boolean isMember = (currentUserId != null && teamService.isUserMemberOfTeam(id, currentUserId)) || isSystemAdmin;
-            boolean isAdmin = (currentUserId != null && teamService.isUserAdminOfTeam(id, currentUserId)) || isSystemAdmin;
 
             model.addAttribute("team", team);
             model.addAttribute("isMember", isMember);

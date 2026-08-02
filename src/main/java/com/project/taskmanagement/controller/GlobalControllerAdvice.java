@@ -19,9 +19,6 @@ public class GlobalControllerAdvice {
     @ModelAttribute("userTeamsAlphabetical")
     public List<Team> getUserTeamsAlphabetical(@AuthenticationPrincipal UserPrincipal principal) {
         if (principal != null && principal.getUser() != null) {
-            if (principal.getUser().isSystemAdmin()) {
-                return teamService.getAllTeamsAlphabetical();
-            }
             return teamService.getUserTeamsAlphabetical(principal.getUser().getId());
         }
         return List.of();

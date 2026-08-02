@@ -16,15 +16,8 @@ public class UserPrincipal implements UserDetails {
 
     private final User user; // dùng user.getId() ở Controller/Service để lấy user đang đăng nhập
 
-    public boolean isSystemAdmin() {
-        return user != null && user.isSystemAdmin();
-    }
-
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        if (user != null && user.isSystemAdmin()) {
-            return List.of(new SimpleGrantedAuthority("ROLE_USER"), new SimpleGrantedAuthority("ROLE_ADMIN"));
-        }
         return List.of(new SimpleGrantedAuthority("ROLE_USER"));
     }
 
