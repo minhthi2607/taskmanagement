@@ -31,7 +31,11 @@
                 <span>Email hoặc mật khẩu không chính xác!</span>
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
-
+            <div th:if="${param.invalidChar}" class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <span>Thông tin đăng nhập chứa ký tự đặc biệt không hợp lệ (*, %, ',... )!</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
             <!-- Card Container -->
             <div class="card border-0 shadow-sm mb-4">
 
