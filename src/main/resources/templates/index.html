@@ -203,10 +203,13 @@
                                     <label for="teamVisibility" class="form-label fw-semibold">Quyền riêng tư <span
                                             class="text-danger">*</span></label>
                                     <select class="form-select" id="teamVisibility" name="visibility" required>
-                                        <option value="PRIVATE" selected>🔒 Riêng tư (Chỉ thành viên trong nhóm mới truy cập
-                                            được)</option>
+                                        <option value="PRIVATE" selected>🔒 Riêng tư (Chỉ thành viên trong nhóm mới truy cập được)</option>
                                         <option value="PUBLIC">🌐 Công khai (Bất kỳ ai có liên kết đều nhìn thấy)</option>
                                     </select>
+                                    <div class="form-text mt-1 text-muted">
+                                        <small><strong>Công khai:</strong> Hiển thị công khai, chỉ thành viên được mời mới có quyền chỉnh sửa bảng.<br>
+                                        <strong>Riêng tư:</strong> Chỉ thành viên trong nhóm mới có quyền xem và truy cập.</small>
+                                    </div>
                                 </div>
                                 <div class="mb-3">
                                     <label for="teamDescription" class="form-label fw-semibold">Mô tả nhóm</label>

@@ -16,12 +16,15 @@ public class UserPrincipal implements UserDetails {
 
     private final User user; // dùng user.getId() ở Controller/Service để lấy user đang đăng nhập
 
+    public boolean isSystemAdmin() {
+        return user != null && user.isSystemAdmin();
+    }
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        // Quyền Quản trị nhóm / Thành viên là quyền RIÊNG theo từng Team,
-        // không phải role toàn hệ thống -> ở đây chỉ cần 1 quyền chung là đã đăng nhập.
-        // Muốn biết user có phải Quản trị của 1 nhóm cụ thể không,
-        // gọi TeamMemberRepository.findByTeamIdAndUserId(...) trong Service.
+        if (user != null && user.isSystemAdmin()) {
+            return List.of(new SimpleGrantedAuthority("ROLE_USER"), new SimpleGrantedAuthority("ROLE_ADMIN"));
+        }
         return List.of(new SimpleGrantedAuthority("ROLE_USER"));
     }
 

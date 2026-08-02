@@ -1,6 +1,7 @@
 package com.project.taskmanagement.repository;
 
 import com.project.taskmanagement.entity.TeamMember;
+import com.project.taskmanagement.enums.Role;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -15,4 +16,6 @@ public interface TeamMemberRepository extends JpaRepository<TeamMember, Long> {
     Optional<TeamMember> findByTeamIdAndUserId(Long teamId, Long userId);
 
     boolean existsByTeamIdAndUserId(Long teamId, Long userId);
+
+    boolean existsByTeamIdAndUserIdAndRole(Long teamId, Long userId, Role role);
 }

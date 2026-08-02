@@ -24,6 +24,11 @@ public interface TeamService {
     List<Team> getAllTeamsAlphabetical();
 
     /**
+     * Lấy danh sách các nhóm Công khai (PUBLIC), sắp xếp Alphabet (dành cho chế độ guest)
+     */
+    List<Team> getPublicTeamsAlphabetical();
+
+    /**
      * Lấy thông tin chi tiết của 1 nhóm theo ID
      */
     Team getTeamById(Long teamId);
@@ -32,4 +37,9 @@ public interface TeamService {
      * Kiểm tra user có phải là thành viên của nhóm hay không
      */
     boolean isUserMemberOfTeam(Long teamId, Long userId);
+
+    /**
+     * Kiểm tra user có phải là Quản trị nhóm (ADMIN) của nhóm hay không
+     */
+    boolean isUserAdminOfTeam(Long teamId, Long userId);
 }
