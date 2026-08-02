@@ -68,3 +68,14 @@ CREATE TABLE `invitations` (
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT `fk_invitations_team` FOREIGN KEY (`team_id`) REFERENCES `teams` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ========================================================
+-- DỮ LIỆU KHỞI TẠO MẶC ĐỊNH (DEFAULT SEED DATA)
+-- ========================================================
+
+-- 1. Tài khoản Admin mặc định
+-- Email: admin@gmail.com
+-- Mật khẩu: 123456 (Đã mã hóa BCrypt)
+INSERT INTO `users` (`id`, `email`, `display_name`, `phone`, `password`, `avatar_url`)
+VALUES (1, 'admin@gmail.com', 'Quản trị viên', '0912345678', '$2a$10$8.UnVuG9HHgffUDAlk8qfOuVGkqRzgVymGe07xD0m1bC.XFjHvwTC', NULL);
+

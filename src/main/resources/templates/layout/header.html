@@ -64,16 +64,24 @@
                 <div sec:authorize="isAuthenticated()" class="dropdown">
                     <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle text-dark" id="userMenuDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                         <!-- Avatar đại diện -->
-                        <div class="avatar-circle me-2">
-                            <span sec:authentication="principal.user.displayName != null ? #strings.substring(principal.user.displayName, 0, 1) : 'U'">U</span>
+                        <div class="avatar-circle me-2"
+                             th:with="hasAvatar=${#authentication.principal.user.avatarUrl != null and !#authentication.principal.user.avatarUrl.isBlank()},
+                                      user=${#authentication.principal.user}">
+                            <img th:if="${hasAvatar}"
+                                 th:src="${user.avatarUrl}"
+                                 alt="Avatar" class="w-100 h-100 rounded-circle" style="object-fit: cover;">
+                            <span th:unless="${hasAvatar}"
+                                  th:text="${user.displayName != null and !#strings.isEmpty(user.displayName) ? #strings.substring(user.displayName, 0, 1) : 'U'}">U</span>
                         </div>
                         <!-- Tên hiển thị người dùng -->
-                        <span class="fw-semibold d-none d-md-inline" sec:authentication="principal.user.displayName">Tên người dùng</span>
+                        <span class="fw-semibold d-none d-md-inline" th:text="${#authentication.principal.user.displayName}">Tên người dùng</span>
+
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="userMenuDropdown">
                         <li class="px-3 py-2 border-bottom">
-                            <div class="fw-bold" sec:authentication="principal.user.displayName">Tên người dùng</div>
-                            <div class="small text-muted" sec:authentication="principal.user.email">email@example.com</div>
+                            <div class="fw-bold" th:text="${#authentication.principal.user.displayName}">Tên người dùng</div>
+                            <div class="small text-muted" th:text="${#authentication.principal.user.email}">email@example.com</div>
+
                         </li>
                         <!-- Story #9: Thay đổi thông tin cá nhân -->
                         <li>
