@@ -21,7 +21,8 @@ public class GlobalControllerAdvice {
         if (principal != null && principal.getUser() != null) {
             return teamService.getUserTeamsAlphabetical(principal.getUser().getId());
         }
-        // Cho môi trường dev/demo chưa login: tự động nạp danh sách nhóm hiện có sắp xếp theo Alphabet
+        // Cho môi trường dev/demo chưa login: tự động nạp danh sách nhóm hiện có sắp
+        // xếp theo Alphabet
         return teamService.getAllTeamsAlphabetical();
     }
 }

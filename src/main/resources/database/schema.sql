@@ -77,5 +77,5 @@ CREATE TABLE `invitations` (
 -- Email: admin@gmail.com
 -- Mật khẩu: 123456 (Đã mã hóa BCrypt)
 INSERT INTO `users` (`id`, `email`, `display_name`, `phone`, `password`, `avatar_url`)
-VALUES (1, 'admin@gmail.com', 'Quản trị viên', '0912345678', '$2a$10$8.UnVuG9HHgffUDAlk8qfOuVGkqRzgVymGe07xD0m1bC.XFjHvwTC', NULL);
+VALUES (1, 'admin@gmail.com', 'Quản trị viên', '0912345678', '$2b$10$uFDWtTbFL00ipKmu74R3qedJj9vcDQBvpu6BlpA4dZhPHbGPPcTEm', NULL);
 
