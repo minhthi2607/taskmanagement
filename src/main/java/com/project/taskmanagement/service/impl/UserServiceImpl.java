@@ -27,6 +27,8 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    @org.springframework.beans.factory.annotation.Value("${app.upload-dir:uploads/}")
+    private String uploadDirConfig;
 
     @Override
     public boolean existsByEmail(String email) {
@@ -83,9 +85,19 @@ public class UserServiceImpl implements UserService {
 
         // Xử lý upload avatar nếu có tệp được tải lên
         if (avatarFile != null && !avatarFile.isEmpty()) {
+            // [BỔ SUNG 1] Kiểm tra dung lượng (tối đa 2MB)
+            if (avatarFile.getSize() > 2 * 1024 * 1024) {
+                throw new IllegalArgumentException("Dung lượng ảnh đại diện không được vượt quá 2MB.");
+            }
+            // Kiểm tra định dạng MIME type
+            String contentType = avatarFile.getContentType();
+            if (contentType == null
+                    || !java.util.List.of("image/jpeg", "image/png", "image/webp").contains(contentType)) {
+                throw new IllegalArgumentException("Chỉ chấp nhận tệp ảnh định dạng JPG, PNG hoặc WEBP.");
+            }
+
             String originalFileName = StringUtils.cleanPath(
-                    avatarFile.getOriginalFilename() != null ? avatarFile.getOriginalFilename() : "avatar.png"
-            );
+                    avatarFile.getOriginalFilename() != null ? avatarFile.getOriginalFilename() : "avatar.png");
             String extension = "";
             int dotIndex = originalFileName.lastIndexOf(".");
             if (dotIndex >= 0) {
@@ -93,7 +105,7 @@ public class UserServiceImpl implements UserService {
             }
 
             String newFileName = UUID.randomUUID().toString() + extension;
-            Path uploadDir = Paths.get("src/main/resources/static/uploads");
+            Path uploadDir = Paths.get(uploadDirConfig);
 
             try {
                 if (!Files.exists(uploadDir)) {

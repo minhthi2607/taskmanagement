@@ -2,7 +2,7 @@
 <html lang="vi"
       xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      layout:decorate="~{layout/main}">
+      layout:decorate="~{layout/auth}">
 <head>
     <title>Đăng nhập - Task Management</title>
 </head>
@@ -53,7 +53,7 @@
                             <label for="email" class="form-label fw-bold text-muted small text-uppercase">Địa chỉ Email <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light text-secondary border-end-0"><i class="bi bi-envelope"></i></span>
-                                <input type="email" id="email" name="email" th:value="${email}" class="form-control border-start-0 ps-0" placeholder="vi-du@domain.com" required autofocus>
+                                <input type="email" id="email" name="email" th:value="${email}" class="form-control border-start-0 ps-0" placeholder="vi-du@domain.com" pattern="^[a-zA-Z0-9@._-]+$" required autofocus>
                             </div>
                         </div>
 
@@ -62,7 +62,7 @@
                             <label for="password" class="form-label fw-bold text-muted small text-uppercase">Mật khẩu <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light text-secondary border-end-0"><i class="bi bi-lock"></i></span>
-                                <input type="password" id="password" name="password" class="form-control border-start-0 ps-0 border-end-0" placeholder="Nhập mật khẩu" required>
+                                <input type="password" id="password" name="password" class="form-control border-start-0 ps-0 border-end-0" placeholder="Nhập mật khẩu" oninput="this.value = this.value.replace(/[*%']/g, '')" required>
                                 <button class="btn btn-outline-secondary border-start-0 text-muted" type="button" onclick="togglePasswordVisibility('password', 'toggleIcon')">
                                     <i class="bi bi-eye" id="toggleIcon"></i>
                                 </button>
