@@ -2,6 +2,7 @@ package com.project.taskmanagement.controller;
 
 import com.project.taskmanagement.config.UserPrincipal;
 import com.project.taskmanagement.dto.TeamCreateDto;
+import com.project.taskmanagement.dto.TeamUpdateDto;
 import com.project.taskmanagement.entity.Team;
 import com.project.taskmanagement.entity.User;
 import com.project.taskmanagement.enums.Visibility;
@@ -95,7 +96,7 @@ public class TeamController {
             }
 
             boolean isMember = currentUserId != null && teamService.isUserMemberOfTeam(id, currentUserId);
-            boolean isAdmin = currentUserId == null || (team.getCreatedBy().equals(currentUserId));
+            boolean isAdmin = teamService.isUserAdminOfTeam(id, currentUserId);
 
             model.addAttribute("team", team);
             model.addAttribute("isMember", isMember);
@@ -105,6 +106,88 @@ public class TeamController {
         } catch (IllegalArgumentException e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
             return "redirect:/team/list";
+        }
+    }
+
+    /**
+     * Story #12, #13: Hiển thị trang Form chỉnh sửa thông tin & quyền riêng tư nhóm
+     */
+    @GetMapping("/{id}/edit")
+    public String showEditForm(@PathVariable("id") Long id,
+                               @AuthenticationPrincipal UserPrincipal principal,
+                               Model model,
+                               RedirectAttributes redirectAttributes) {
+        try {
+            Team team = teamService.getTeamById(id);
+            Long currentUserId = (principal != null && principal.getUser() != null) ? principal.getUser().getId() : null;
+
+            if (!teamService.isUserAdminOfTeam(id, currentUserId)) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Bạn không có quyền chỉnh sửa nhóm này!");
+                return "redirect:/team/" + id;
+            }
+
+            if (!model.containsAttribute("teamUpdateDto")) {
+                TeamUpdateDto dto = TeamUpdateDto.builder()
+                        .name(team.getName())
+                        .type(team.getType())
+                        .visibility(team.getVisibility())
+                        .description(team.getDescription())
+                        .build();
+                model.addAttribute("teamUpdateDto", dto);
+            }
+
+            model.addAttribute("team", team);
+            return "team/team-edit";
+        } catch (IllegalArgumentException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            return "redirect:/team/list";
+        }
+    }
+
+    /**
+     * Story #12, #13: Xử lý submit Form chỉnh sửa thông tin & quyền riêng tư nhóm
+     */
+    @PostMapping("/{id}/edit")
+    public String handleEditTeam(@PathVariable("id") Long id,
+                                 @Valid @ModelAttribute("teamUpdateDto") TeamUpdateDto dto,
+                                 BindingResult bindingResult,
+                                 @AuthenticationPrincipal UserPrincipal principal,
+                                 RedirectAttributes redirectAttributes,
+                                 Model model) {
+        if (bindingResult.hasErrors()) {
+            Team team = teamService.getTeamById(id);
+            model.addAttribute("team", team);
+            return "team/team-edit";
+        }
+
+        try {
+            User currentUser = (principal != null) ? principal.getUser() : null;
+            Team updatedTeam = teamService.updateTeam(id, dto, currentUser);
+            redirectAttributes.addFlashAttribute("successMessage", "Cập nhật thông tin nhóm '" + updatedTeam.getName() + "' thành công!");
+            return "redirect:/team/" + updatedTeam.getId();
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Có lỗi xảy ra khi cập nhật nhóm: " + e.getMessage());
+            return "redirect:/team/" + id + "/edit";
+        }
+    }
+
+    /**
+     * Story #15: Xử lý xóa nhóm
+     */
+    @PostMapping("/{id}/delete")
+    public String handleDeleteTeam(@PathVariable("id") Long id,
+                                   @AuthenticationPrincipal UserPrincipal principal,
+                                   RedirectAttributes redirectAttributes) {
+        try {
+            User currentUser = (principal != null) ? principal.getUser() : null;
+            Team team = teamService.getTeamById(id);
+            String teamName = team.getName();
+            teamService.deleteTeam(id, currentUser);
+            redirectAttributes.addFlashAttribute("successMessage", "Đã xóa nhóm '" + teamName + "' thành công!");
+            return "redirect:/team/list";
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Có lỗi xảy ra khi xóa nhóm: " + e.getMessage());
+            return "redirect:/team/" + id;
         }
     }
 }

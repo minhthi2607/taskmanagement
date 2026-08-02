@@ -1,6 +1,7 @@
 package com.project.taskmanagement.service.impl;
 
 import com.project.taskmanagement.dto.TeamCreateDto;
+import com.project.taskmanagement.dto.TeamUpdateDto;
 import com.project.taskmanagement.entity.Team;
 import com.project.taskmanagement.entity.TeamMember;
 import com.project.taskmanagement.entity.User;
@@ -61,6 +62,37 @@ public class TeamServiceImpl implements TeamService {
     }
 
     @Override
+    @Transactional
+    public Team updateTeam(Long teamId, TeamUpdateDto dto, User currentUser) {
+        Team team = getTeamById(teamId);
+        Long userId = (currentUser != null) ? currentUser.getId() : null;
+
+        if (userId != null && !isUserAdminOfTeam(teamId, userId)) {
+            throw new SecurityException("Bạn không có quyền chỉnh sửa nhóm này!");
+        }
+
+        team.setName(dto.getName().trim());
+        team.setType(dto.getType().trim());
+        team.setVisibility(dto.getVisibility());
+        team.setDescription(dto.getDescription() != null ? dto.getDescription().trim() : null);
+
+        return teamRepository.save(team);
+    }
+
+    @Override
+    @Transactional
+    public void deleteTeam(Long teamId, User currentUser) {
+        Team team = getTeamById(teamId);
+        Long userId = (currentUser != null) ? currentUser.getId() : null;
+
+        if (userId != null && !isUserAdminOfTeam(teamId, userId)) {
+            throw new SecurityException("Bạn không có quyền xóa nhóm này!");
+        }
+
+        teamRepository.delete(team);
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public List<Team> getUserTeamsAlphabetical(Long userId) {
         return teamRepository.findUserTeamsOrderByNameAsc(userId);
@@ -83,5 +115,18 @@ public class TeamServiceImpl implements TeamService {
     @Transactional(readOnly = true)
     public boolean isUserMemberOfTeam(Long teamId, Long userId) {
         return teamMemberRepository.existsByTeamIdAndUserId(teamId, userId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean isUserAdminOfTeam(Long teamId, Long userId) {
+        if (userId == null) return true; // Nếu chưa có auth/demo mode, cho phép truy cập full quyền
+        Team team = getTeamById(teamId);
+        if (team.getCreatedBy().equals(userId)) {
+            return true;
+        }
+        return teamMemberRepository.findByTeamIdAndUserId(teamId, userId)
+                .map(member -> member.getRole() == Role.ADMIN)
+                .orElse(false);
     }
 }
