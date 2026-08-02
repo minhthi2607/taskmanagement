@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}">
+<head>
+    <title>Tạo nhóm mới - Task Management</title>
+</head>
+<body>
+
+    <div layout:fragment="content">
+        <!-- Breadcrumb & Header -->
+        <div class="mb-4">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a th:href="@{/}" class="text-decoration-none">Trang chủ</a></li>
+                    <li class="breadcrumb-item"><a th:href="@{/team/list}" class="text-decoration-none">Danh sách nhóm</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Tạo nhóm mới</li>
+                </ol>
+            </nav>
+            <h3 class="fw-bold mb-1">Tạo nhóm mới</h3>
+            <p class="text-muted mb-0">Tạo không gian làm việc mới để cộng tác cùng các thành viên</p>
+        </div>
+
+        <!-- Form Card -->
+        <div class="row justify-content-center">
+            <div class="col-12 col-lg-8">
+                <div class="card border-0 shadow-sm p-3 p-md-4">
+                    <form th:action="@{/team/create}" th:object="${teamCreateDto}" method="post">
+
+                        <!-- Tên nhóm -->
+                        <div class="mb-3">
+                            <label for="name" class="form-label fw-semibold">
+                                Tên nhóm <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   th:classappend="${#fields.hasErrors('name')} ? 'is-invalid'"
+                                   id="name" 
+                                   th:field="*{name}" 
+                                   placeholder="Nhập tên nhóm (VD: Dev Team, Design UI/UX...)" 
+                                   required>
+                            <div class="invalid-feedback" th:if="${#fields.hasErrors('name')}" th:errors="*{name}">
+                                Lỗi tên nhóm
+                            </div>
+                        </div>
+
+                        <!-- Loại nhóm -->
+                        <div class="mb-3">
+                            <label for="type" class="form-label fw-semibold">
+                                Loại nhóm <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   th:classappend="${#fields.hasErrors('type')} ? 'is-invalid'"
+                                   id="type" 
+                                   th:field="*{type}" 
+                                   placeholder="VD: Kỹ thuật, Marketing, Nhân sự, Thiết kế..." 
+                                   required>
+                            <div class="invalid-feedback" th:if="${#fields.hasErrors('type')}" th:errors="*{type}">
+                                Lỗi loại nhóm
+                            </div>
+                        </div>
+
+                        <!-- Quyền riêng tư -->
+                        <div class="mb-3">
+                            <label for="visibility" class="form-label fw-semibold">
+                                Quyền riêng tư <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-select" 
+                                    th:classappend="${#fields.hasErrors('visibility')} ? 'is-invalid'"
+                                    id="visibility" 
+                                    th:field="*{visibility}" 
+                                    required>
+                                <option value="PRIVATE">🔒 Riêng tư (Chỉ thành viên trong nhóm mới truy cập được)</option>
+                                <option value="PUBLIC">🌐 Công khai (Bất kỳ ai có liên kết đều nhìn thấy)</option>
+                            </select>
+                            <div class="invalid-feedback" th:if="${#fields.hasErrors('visibility')}" th:errors="*{visibility}">
+                                Lỗi chọn quyền riêng tư
+                            </div>
+                            <div class="form-text mt-1 text-muted">
+                                <small><strong>Công khai:</strong> Hiển thị công khai, chỉ thành viên được mời mới có quyền chỉnh sửa bảng.<br>
+                                <strong>Riêng tư:</strong> Chỉ thành viên trong nhóm mới có quyền xem và truy cập.</small>
+                            </div>
+                        </div>
+
+                        <!-- Mô tả -->
+                        <div class="mb-4">
+                            <label for="description" class="form-label fw-semibold">Mô tả nhóm</label>
+                            <textarea class="form-control" 
+                                      id="description" 
+                                      th:field="*{description}" 
+                                      rows="4" 
+                                      placeholder="Mô tả mục đích, nhiệm vụ hoặc quy định chung của nhóm..."></textarea>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-flex justify-content-end gap-2">
+                            <a th:href="@{/team/list}" class="btn btn-light px-4">Hủy</a>
+                            <button type="submit" class="btn btn-primary px-4 d-flex align-items-center gap-2">
+                                <i class="bi bi-plus-lg"></i>
+                                <span>Tạo nhóm</span>
+                            </button>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
