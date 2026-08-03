@@ -64,13 +64,15 @@ public class TeamServiceImpl implements TeamService {
     @Override
     @Transactional
     public Team updateTeam(Long teamId, TeamUpdateDto dto, User currentUser) {
-        Team team = getTeamById(teamId);
         Long userId = (currentUser != null) ? currentUser.getId() : null;
 
-        if (userId != null && !isUserAdminOfTeam(teamId, userId)) {
+        // 1. Kiểm tra quyền Quản trị nhóm (Luôn kiểm tra kể cả khi chưa đăng nhập)
+        if (!isUserAdminOfTeam(teamId, userId)) {
             throw new SecurityException("Bạn không có quyền chỉnh sửa nhóm này!");
         }
 
+        // 2. Lấy đối tượng Team và cập nhật dữ liệu
+        Team team = getTeamById(teamId);
         team.setName(dto.getName().trim());
         team.setType(dto.getType().trim());
         team.setVisibility(dto.getVisibility());
@@ -82,13 +84,15 @@ public class TeamServiceImpl implements TeamService {
     @Override
     @Transactional
     public void deleteTeam(Long teamId, User currentUser) {
-        Team team = getTeamById(teamId);
         Long userId = (currentUser != null) ? currentUser.getId() : null;
 
-        if (userId != null && !isUserAdminOfTeam(teamId, userId)) {
+        // 1. Kiểm tra quyền Quản trị nhóm (Luôn kiểm tra kể cả khi chưa đăng nhập)
+        if (!isUserAdminOfTeam(teamId, userId)) {
             throw new SecurityException("Bạn không có quyền xóa nhóm này!");
         }
 
+        // 2. Lấy đối tượng Team và xóa
+        Team team = getTeamById(teamId);
         teamRepository.delete(team);
     }
 
@@ -120,7 +124,7 @@ public class TeamServiceImpl implements TeamService {
     @Override
     @Transactional(readOnly = true)
     public boolean isUserAdminOfTeam(Long teamId, Long userId) {
-        if (userId == null) return true; // Nếu chưa có auth/demo mode, cho phép truy cập full quyền
+        if (userId == null) return false; // Chưa đăng nhập -> Luôn KHÔNG CÓ QUYỀN Admin
         Team team = getTeamById(teamId);
         if (team.getCreatedBy().equals(userId)) {
             return true;

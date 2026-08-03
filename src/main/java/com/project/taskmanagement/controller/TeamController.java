@@ -87,9 +87,9 @@ public class TeamController {
             Team team = teamService.getTeamById(id);
             Long currentUserId = (principal != null && principal.getUser() != null) ? principal.getUser().getId() : null;
 
-            // Kiểm tra quyền truy cập nếu là nhóm PRIVATE và có thông tin đăng nhập
-            if (team.getVisibility() == Visibility.PRIVATE && currentUserId != null) {
-                if (!teamService.isUserMemberOfTeam(id, currentUserId)) {
+            // Kiểm tra quyền truy cập nếu là nhóm PRIVATE (Chưa đăng nhập hoặc không phải thành viên -> Chặn)
+            if (team.getVisibility() == Visibility.PRIVATE) {
+                if (currentUserId == null || !teamService.isUserMemberOfTeam(id, currentUserId)) {
                     redirectAttributes.addFlashAttribute("errorMessage", "Bạn không có quyền truy cập nhóm riêng tư này!");
                     return "redirect:/team/list";
                 }
@@ -165,6 +165,9 @@ public class TeamController {
             Team updatedTeam = teamService.updateTeam(id, dto, currentUser);
             redirectAttributes.addFlashAttribute("successMessage", "Cập nhật thông tin nhóm '" + updatedTeam.getName() + "' thành công!");
             return "redirect:/team/" + updatedTeam.getId();
+        } catch (SecurityException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            return "redirect:/team/" + id;
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", "Có lỗi xảy ra khi cập nhật nhóm: " + e.getMessage());
             return "redirect:/team/" + id + "/edit";
@@ -185,6 +188,9 @@ public class TeamController {
             teamService.deleteTeam(id, currentUser);
             redirectAttributes.addFlashAttribute("successMessage", "Đã xóa nhóm '" + teamName + "' thành công!");
             return "redirect:/team/list";
+        } catch (SecurityException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            return "redirect:/team/" + id;
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", "Có lỗi xảy ra khi xóa nhóm: " + e.getMessage());
             return "redirect:/team/" + id;
