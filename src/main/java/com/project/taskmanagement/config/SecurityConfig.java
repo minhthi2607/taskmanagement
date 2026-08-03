@@ -7,6 +7,7 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
@@ -29,11 +30,13 @@ public class SecurityConfig {
                                 // Bật bảo vệ CSRF chống tấn công Cross-Site Request Forgery
                                 .csrf(Customizer.withDefaults())
                                 .authorizeHttpRequests(auth -> auth
-                                                // Các đường dẫn công khai: trang chủ, tạo/xem nhóm (để team dễ chạy
-                                                // demo),
-                                                // trang đăng ký/đăng nhập, css/js, ảnh upload
-                                                .requestMatchers("/", "/auth/**", "/team/**", "/css/**", "/js/**",
-                                                                "/uploads/**")
+                                                .requestMatchers("/team/create", "/team/*/edit", "/team/*/delete",
+                                                                "/team/*/members/**")
+                                                .authenticated()
+                                                .requestMatchers(HttpMethod.GET, "/", "/team/list", "/team/{id}")
+                                                .permitAll()
+                                                .requestMatchers("/auth/**", "/css/**", "/js/**", "/uploads/**",
+                                                                "/error")
                                                 .permitAll()
                                                 .anyRequest().authenticated())
                                 .formLogin(form -> form

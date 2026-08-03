@@ -29,7 +29,12 @@ public class TeamController {
      * Story #10: Hiển thị trang Form tạo mới 1 nhóm
      */
     @GetMapping("/create")
-    public String showCreateForm(Model model) {
+    public String showCreateForm(@AuthenticationPrincipal UserPrincipal principal,
+            RedirectAttributes redirectAttributes, Model model) {
+        if (principal == null || principal.getUser() == null) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Bạn cần đăng nhập để tạo nhóm!");
+            return "redirect:/auth/login";
+        }
         if (!model.containsAttribute("teamCreateDto")) {
             model.addAttribute("teamCreateDto", new TeamCreateDto());
         }
@@ -41,18 +46,24 @@ public class TeamController {
      */
     @PostMapping("/create")
     public String handleCreateTeam(@Valid @ModelAttribute("teamCreateDto") TeamCreateDto dto,
-                                  BindingResult bindingResult,
-                                  @AuthenticationPrincipal UserPrincipal principal,
-                                  RedirectAttributes redirectAttributes,
-                                  Model model) {
+            BindingResult bindingResult,
+            @AuthenticationPrincipal UserPrincipal principal,
+            RedirectAttributes redirectAttributes,
+            Model model) {
+        if (principal == null || principal.getUser() == null) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Bạn cần đăng nhập để tạo nhóm!");
+            return "redirect:/auth/login";
+        }
+
         if (bindingResult.hasErrors()) {
             return "team/team-form";
         }
 
         try {
-            User currentUser = (principal != null) ? principal.getUser() : null;
+            User currentUser = principal.getUser();
             Team createdTeam = teamService.createTeam(dto, currentUser);
-            redirectAttributes.addFlashAttribute("successMessage", "Tạo nhóm '" + createdTeam.getName() + "' thành công!");
+            redirectAttributes.addFlashAttribute("successMessage",
+                    "Tạo nhóm '" + createdTeam.getName() + "' thành công!");
             return "redirect:/team/" + createdTeam.getId();
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", "Có lỗi xảy ra khi tạo nhóm: " + e.getMessage());
@@ -69,7 +80,7 @@ public class TeamController {
         if (principal != null && principal.getUser() != null) {
             teams = teamService.getUserTeamsAlphabetical(principal.getUser().getId());
         } else {
-            teams = teamService.getAllTeamsAlphabetical();
+            teams = teamService.getPublicTeamsAlphabetical();
         }
         model.addAttribute("teams", teams);
         return "team/team-list";
@@ -80,23 +91,21 @@ public class TeamController {
      */
     @GetMapping("/{id}")
     public String showTeamDetail(@PathVariable("id") Long id,
-                                 @AuthenticationPrincipal UserPrincipal principal,
-                                 Model model,
-                                 RedirectAttributes redirectAttributes) {
+            @AuthenticationPrincipal UserPrincipal principal,
+            Model model,
+            RedirectAttributes redirectAttributes) {
         try {
             Team team = teamService.getTeamById(id);
-            Long currentUserId = (principal != null && principal.getUser() != null) ? principal.getUser().getId() : null;
-
-            // Kiểm tra quyền truy cập nếu là nhóm PRIVATE (Chưa đăng nhập hoặc không phải thành viên -> Chặn)
-            if (team.getVisibility() == Visibility.PRIVATE) {
-                if (currentUserId == null || !teamService.isUserMemberOfTeam(id, currentUserId)) {
-                    redirectAttributes.addFlashAttribute("errorMessage", "Bạn không có quyền truy cập nhóm riêng tư này!");
-                    return "redirect:/team/list";
-                }
-            }
-
+            Long currentUserId = (principal != null && principal.getUser() != null) ? principal.getUser().getId()
+                    : null;
             boolean isMember = currentUserId != null && teamService.isUserMemberOfTeam(id, currentUserId);
-            boolean isAdmin = teamService.isUserAdminOfTeam(id, currentUserId);
+            boolean isAdmin = currentUserId != null && teamService.isUserAdminOfTeam(id, currentUserId);
+
+            // Kiểm tra quyền truy cập nếu là nhóm PRIVATE
+            if (team.getVisibility() == Visibility.PRIVATE && !isMember) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Bạn không có quyền truy cập nhóm riêng tư này!");
+                return "redirect:/team/list";
+            }
 
             model.addAttribute("team", team);
             model.addAttribute("isMember", isMember);
@@ -114,12 +123,13 @@ public class TeamController {
      */
     @GetMapping("/{id}/edit")
     public String showEditForm(@PathVariable("id") Long id,
-                               @AuthenticationPrincipal UserPrincipal principal,
-                               Model model,
-                               RedirectAttributes redirectAttributes) {
+            @AuthenticationPrincipal UserPrincipal principal,
+            Model model,
+            RedirectAttributes redirectAttributes) {
         try {
             Team team = teamService.getTeamById(id);
-            Long currentUserId = (principal != null && principal.getUser() != null) ? principal.getUser().getId() : null;
+            Long currentUserId = (principal != null && principal.getUser() != null) ? principal.getUser().getId()
+                    : null;
 
             if (!teamService.isUserAdminOfTeam(id, currentUserId)) {
                 redirectAttributes.addFlashAttribute("errorMessage", "Bạn không có quyền chỉnh sửa nhóm này!");
@@ -149,11 +159,11 @@ public class TeamController {
      */
     @PostMapping("/{id}/edit")
     public String handleEditTeam(@PathVariable("id") Long id,
-                                 @Valid @ModelAttribute("teamUpdateDto") TeamUpdateDto dto,
-                                 BindingResult bindingResult,
-                                 @AuthenticationPrincipal UserPrincipal principal,
-                                 RedirectAttributes redirectAttributes,
-                                 Model model) {
+            @Valid @ModelAttribute("teamUpdateDto") TeamUpdateDto dto,
+            BindingResult bindingResult,
+            @AuthenticationPrincipal UserPrincipal principal,
+            RedirectAttributes redirectAttributes,
+            Model model) {
         if (bindingResult.hasErrors()) {
             Team team = teamService.getTeamById(id);
             model.addAttribute("team", team);
@@ -163,7 +173,8 @@ public class TeamController {
         try {
             User currentUser = (principal != null) ? principal.getUser() : null;
             Team updatedTeam = teamService.updateTeam(id, dto, currentUser);
-            redirectAttributes.addFlashAttribute("successMessage", "Cập nhật thông tin nhóm '" + updatedTeam.getName() + "' thành công!");
+            redirectAttributes.addFlashAttribute("successMessage",
+                    "Cập nhật thông tin nhóm '" + updatedTeam.getName() + "' thành công!");
             return "redirect:/team/" + updatedTeam.getId();
         } catch (SecurityException e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
@@ -179,8 +190,8 @@ public class TeamController {
      */
     @PostMapping("/{id}/delete")
     public String handleDeleteTeam(@PathVariable("id") Long id,
-                                   @AuthenticationPrincipal UserPrincipal principal,
-                                   RedirectAttributes redirectAttributes) {
+            @AuthenticationPrincipal UserPrincipal principal,
+            RedirectAttributes redirectAttributes) {
         try {
             User currentUser = (principal != null) ? principal.getUser() : null;
             Team team = teamService.getTeamById(id);
