@@ -1,6 +1,7 @@
 package com.project.taskmanagement.repository;
 
 import com.project.taskmanagement.entity.Team;
+import com.project.taskmanagement.enums.Visibility;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -15,4 +16,6 @@ public interface TeamRepository extends JpaRepository<Team, Long> {
     List<Team> findUserTeamsOrderByNameAsc(@Param("userId") Long userId);
 
     List<Team> findAllByOrderByNameAsc();
+
+    List<Team> findByVisibilityOrderByNameAsc(Visibility visibility);
 }

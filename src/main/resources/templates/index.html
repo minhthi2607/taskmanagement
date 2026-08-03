@@ -99,11 +99,10 @@
                     <p class="text-muted mb-0">Quản lý các bảng công việc và nhóm làm việc của bạn</p>
                 </div>
                 <!-- Nút Tạo nhóm nhanh (Story #10) -->
-                <button class="btn btn-primary d-flex align-items-center gap-2" data-bs-toggle="modal"
-                    data-bs-target="#createTeamModal">
+                <a th:href="@{/team/create}" class="btn btn-primary d-flex align-items-center gap-2">
                     <i class="bi bi-plus-lg"></i>
                     <span>Tạo nhóm mới</span>
-                </button>
+                </a>
             </div>
 
             <!-- KHUNG 1: DANH SÁCH BẢNG TỰ TẠO (PHÂN LOẠI THEO NHÓM) - Story #1 -->
@@ -167,64 +166,14 @@
                     <div class="card-body">
                         <i class="bi bi-people fs-2 text-muted d-block mb-2"></i>
                         <p class="text-muted mb-3">Bạn chưa tạo hoặc tham gia nhóm nào.</p>
-                        <button class="btn btn-primary btn-sm px-3" data-bs-toggle="modal"
-                            data-bs-target="#createTeamModal">
+                        <a th:href="@{/team/create}" class="btn btn-primary btn-sm px-3">
                             <i class="bi bi-plus-lg me-1"></i> Tạo nhóm ngay
-                        </button>
+                        </a>
                     </div>
                 </div>
 
             </section>
 
-            <!-- MODAL: TẠO NHÓM MỚI (Story #10) -->
-            <div class="modal fade" id="createTeamModal" tabindex="-1" aria-labelledby="createTeamModalLabel"
-                aria-hidden="true">
-                <div class="modal-dialog modal-dialog-centered">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title fw-bold" id="createTeamModalLabel">Tạo nhóm mới</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        <form th:action="@{/team/create}" method="post">
-                            <div class="modal-body">
-                                <div class="mb-3">
-                                    <label for="teamName" class="form-label fw-semibold">Tên nhóm <span
-                                            class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="teamName" name="name"
-                                        placeholder="Nhập tên nhóm..." required>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="teamType" class="form-label fw-semibold">Loại nhóm <span
-                                            class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="teamType" name="type"
-                                        placeholder="VD: Kỹ thuật, Marketing, Thiết kế..." required>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="teamVisibility" class="form-label fw-semibold">Quyền riêng tư <span
-                                            class="text-danger">*</span></label>
-                                    <select class="form-select" id="teamVisibility" name="visibility" required>
-                                        <option value="PRIVATE" selected>🔒 Riêng tư (Chỉ thành viên trong nhóm mới truy cập
-                                            được)</option>
-                                        <option value="PUBLIC">🌐 Công khai (Bất kỳ ai có liên kết đều nhìn thấy)</option>
-                                    </select>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="teamDescription" class="form-label fw-semibold">Mô tả nhóm</label>
-                                    <textarea class="form-control" id="teamDescription" name="description" rows="3"
-                                        placeholder="Mô tả mục đích của nhóm..."></textarea>
-                                </div>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                                <button type="submit" class="btn btn-primary d-flex align-items-center gap-1">
-                                    <i class="bi bi-plus-lg"></i>
-                                    <span>Tạo nhóm</span>
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
         </div>
 
     </div>

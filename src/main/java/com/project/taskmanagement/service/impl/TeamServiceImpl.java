@@ -5,6 +5,7 @@ import com.project.taskmanagement.entity.Team;
 import com.project.taskmanagement.entity.TeamMember;
 import com.project.taskmanagement.entity.User;
 import com.project.taskmanagement.enums.Role;
+import com.project.taskmanagement.enums.Visibility;
 import com.project.taskmanagement.repository.TeamMemberRepository;
 import com.project.taskmanagement.repository.TeamRepository;
 import com.project.taskmanagement.repository.UserRepository;
@@ -26,21 +27,14 @@ public class TeamServiceImpl implements TeamService {
     @Override
     @Transactional
     public Team createTeam(TeamCreateDto dto, User currentUser) {
-        // Nếu người dùng chưa đăng nhập (đang demo/chưa tích hợp Auth đầy đủ),
-        // tự động lấy/tạo tài khoản Quản trị viên mặc định để đảm bảo khóa ngoại MySQL không bị lỗi.
         if (currentUser == null || currentUser.getId() == null) {
-            currentUser = userRepository.findByEmail("admin@taskmanagement.com")
-                    .orElseGet(() -> userRepository.save(User.builder()
-                            .email("admin@taskmanagement.com")
-                            .displayName("Quản trị viên")
-                            .password("$2a$10$7R0w7J8/4mF5X7kQ8V6bE.W7bE7Z7Z7Z7Z7Z7Z7Z7Z7Z7")
-                            .build()));
+            throw new IllegalArgumentException("Bạn cần đăng nhập để thực hiện thao tác này.");
         }
 
         // 1. Lưu thông tin Nhóm
         Team team = Team.builder()
-                .name(dto.getName().trim())
-                .type(dto.getType().trim())
+                .name(dto.getName() != null ? dto.getName().trim() : null)
+                .type(dto.getType() != null ? dto.getType().trim() : null)
                 .visibility(dto.getVisibility())
                 .description(dto.getDescription() != null ? dto.getDescription().trim() : null)
                 .createdBy(currentUser.getId())
@@ -63,6 +57,9 @@ public class TeamServiceImpl implements TeamService {
     @Override
     @Transactional(readOnly = true)
     public List<Team> getUserTeamsAlphabetical(Long userId) {
+        if (userId == null) {
+            return List.of();
+        }
         return teamRepository.findUserTeamsOrderByNameAsc(userId);
     }
 
@@ -70,6 +67,12 @@ public class TeamServiceImpl implements TeamService {
     @Transactional(readOnly = true)
     public List<Team> getAllTeamsAlphabetical() {
         return teamRepository.findAllByOrderByNameAsc();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Team> getPublicTeamsAlphabetical() {
+        return teamRepository.findByVisibilityOrderByNameAsc(Visibility.PUBLIC);
     }
 
     @Override
@@ -82,6 +85,18 @@ public class TeamServiceImpl implements TeamService {
     @Override
     @Transactional(readOnly = true)
     public boolean isUserMemberOfTeam(Long teamId, Long userId) {
+        if (teamId == null || userId == null) {
+            return false;
+        }
         return teamMemberRepository.existsByTeamIdAndUserId(teamId, userId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean isUserAdminOfTeam(Long teamId, Long userId) {
+        if (teamId == null || userId == null) {
+            return false;
+        }
+        return teamMemberRepository.existsByTeamIdAndUserIdAndRole(teamId, userId, Role.ADMIN);
     }
 }
