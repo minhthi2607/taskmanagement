@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}">
+<head>
+    <title th:text="'Chỉnh sửa ' + ${team.name} + ' - Task Management'">Chỉnh sửa nhóm</title>
+    <style>
+        .edit-header-card {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            color: #ffffff;
+            border-radius: 16px;
+            overflow: hidden;
+            position: relative;
+        }
+        .edit-header-card::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -10%;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, rgba(255, 255, 255, 0) 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+        .privacy-option-card {
+            cursor: pointer;
+            border: 2px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 1.25rem;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            background-color: #ffffff;
+            position: relative;
+        }
+        .privacy-option-card:hover {
+            border-color: #3b82f6;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.12);
+        }
+        .privacy-option-card.selected {
+            border-color: #2563eb;
+            background-color: #eff6ff;
+            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.15);
+        }
+        .privacy-option-card .check-icon {
+            opacity: 0;
+            transform: scale(0.5);
+            transition: all 0.2s ease;
+        }
+        .privacy-option-card.selected .check-icon {
+            opacity: 1;
+            transform: scale(1);
+        }
+        .danger-zone-card {
+            border: 1px solid rgba(239, 68, 68, 0.25);
+            background: linear-gradient(135deg, #fff5f5 0%, #fef2f2 100%);
+            border-radius: 16px;
+        }
+        .type-badge-btn {
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid #cbd5e1;
+        }
+        .type-badge-btn:hover {
+            background-color: #0d6efd !important;
+            color: #ffffff !important;
+            border-color: #0d6efd;
+        }
+    </style>
+</head>
+<body>
+
+    <div layout:fragment="content">
+        <!-- Breadcrumb -->
+        <nav aria-label="breadcrumb" class="mb-3">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a th:href="@{/}" class="text-decoration-none text-secondary">Trang chủ</a></li>
+                <li class="breadcrumb-item"><a th:href="@{/team/list}" class="text-decoration-none text-secondary">Danh sách nhóm</a></li>
+                <li class="breadcrumb-item"><a th:href="@{/team/{id}(id=${team.id})}" class="text-decoration-none text-secondary" th:text="${team.name}">Tên nhóm</a></li>
+                <li class="breadcrumb-item active fw-semibold" aria-current="page">Chỉnh sửa & Cài đặt</li>
+            </ol>
+        </nav>
+
+        <!-- Header Card Component -->
+        <div class="edit-header-card shadow-sm p-4 mb-4">
+            <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 position-relative" style="z-index: 1;">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="bg-primary text-white rounded-4 d-flex align-items-center justify-content-center shadow" style="width: 60px; height: 60px; font-size: 1.6rem;">
+                        <i class="bi bi-gear-wide-connected"></i>
+                    </div>
+                    <div>
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <h3 class="fw-bold m-0 text-white" th:text="${team.name}">Tên nhóm</h3>
+                            <span th:if="${team.visibility.name() == 'PUBLIC'}" class="badge bg-success text-white rounded-pill px-3 py-1 fw-bold shadow-sm">
+                                <i class="bi bi-globe me-1"></i>Công khai
+                            </span>
+                            <span th:if="${team.visibility.name() == 'PRIVATE'}" class="badge bg-warning text-dark rounded-pill px-3 py-1 fw-bold shadow-sm">
+                                <i class="bi bi-lock-fill me-1"></i>Riêng tư
+                            </span>
+                        </div>
+                        <p class="text-slate-300 small mb-0 mt-1">Quản lý cài đặt thông tin nhóm, phân quyền riêng tư và thiết lập khu vực nguy hiểm</p>
+                    </div>
+                </div>
+                <div>
+                    <a th:href="@{/team/{id}(id=${team.id})}" class="btn btn-outline-light btn-sm rounded-pill px-3 d-flex align-items-center gap-2">
+                        <i class="bi bi-arrow-left-short fs-5"></i>
+                        <span>Quay lại nhóm</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Flash Messages -->
+        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show shadow-sm rounded-3 mb-4" role="alert">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-exclamation-triangle-fill fs-5 me-2"></i>
+                <span th:text="${errorMessage}">Đã xảy ra lỗi</span>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show shadow-sm rounded-3 mb-4" role="alert">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-check-circle-fill fs-5 me-2"></i>
+                <span th:text="${successMessage}">Thành công</span>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+
+        <div class="row justify-content-center">
+            <div class="col-12 col-lg-9">
+                
+                <!-- Form Chỉnh sửa thông tin & Quyền riêng tư -->
+                <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
+                    <div class="d-flex align-items-center gap-2 border-bottom pb-3 mb-4">
+                        <i class="bi bi-sliders text-primary fs-4"></i>
+                        <div>
+                            <h5 class="fw-bold mb-0">Thông tin chung & Quyền riêng tư</h5>
+                            <small class="text-muted">Cập nhật thông tin nhận diện nhóm công việc của bạn</small>
+                        </div>
+                    </div>
+                    
+                    <form th:action="@{/team/{id}/edit(id=${team.id})}" th:object="${teamUpdateDto}" method="post" id="teamEditForm">
+
+                        <!-- Tên nhóm -->
+                        <div class="mb-4">
+                            <label for="name" class="form-label fw-bold text-dark">
+                                Tên nhóm <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-people-fill"></i></span>
+                                <input type="text" 
+                                       class="form-control border-start-0 ps-0" 
+                                       th:classappend="${#fields.hasErrors('name')} ? 'is-invalid'"
+                                       id="name" 
+                                       th:field="*{name}" 
+                                       placeholder="Ví dụ: Đội Ngũ Thiết Kế UI/UX, Dev Backend..." 
+                                       required>
+                            </div>
+                            <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('name')}" th:errors="*{name}">
+                                Lỗi tên nhóm
+                            </div>
+                        </div>
+
+                        <!-- Loại nhóm -->
+                        <div class="mb-4">
+                            <label for="type" class="form-label fw-bold text-dark">
+                                Loại nhóm <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group mb-2">
+                                <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-grid-fill"></i></span>
+                                <input type="text" 
+                                       class="form-control border-start-0 ps-0" 
+                                       th:classappend="${#fields.hasErrors('type')} ? 'is-invalid'"
+                                       id="type" 
+                                       th:field="*{type}" 
+                                       placeholder="Nhập hoặc chọn loại nhóm..." 
+                                       required>
+                            </div>
+                            <!-- Gợi ý nhanh loại nhóm -->
+                            <div class="d-flex align-items-center gap-2 flex-wrap mt-2">
+                                <small class="text-muted fw-semibold me-1"><i class="bi bi-lightbulb me-1"></i>Gợi ý:</small>
+                                <span class="badge bg-light text-dark type-badge-btn rounded-pill px-3 py-2" onclick="selectType('Kỹ thuật & Công nghệ')">Kỹ thuật & Công nghệ</span>
+                                <span class="badge bg-light text-dark type-badge-btn rounded-pill px-3 py-2" onclick="selectType('Thiết kế UI/UX')">Thiết kế UI/UX</span>
+                                <span class="badge bg-light text-dark type-badge-btn rounded-pill px-3 py-2" onclick="selectType('Marketing & Content')">Marketing & Content</span>
+                                <span class="badge bg-light text-dark type-badge-btn rounded-pill px-3 py-2" onclick="selectType('Quản lý Dự án')">Quản lý Dự án</span>
+                                <span class="badge bg-light text-dark type-badge-btn rounded-pill px-3 py-2" onclick="selectType('Nhân sự & Tuyển dụng')">Nhân sự</span>
+                            </div>
+                            <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('type')}" th:errors="*{type}">
+                                Lỗi loại nhóm
+                            </div>
+                        </div>
+
+                        <!-- Quyền riêng tư (Story #13 - Option Cards Trực Quan) -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold text-dark mb-2">
+                                Quyền riêng tư nhóm <span class="text-danger">*</span>
+                            </label>
+                            <p class="text-muted small mb-3">Quyết định ai có quyền nhìn thấy và truy cập vào không gian làm việc này.</p>
+                            
+                            <!-- Hidden Select for Form Binding -->
+                            <select class="d-none" id="visibility" th:field="*{visibility}">
+                                <option value="PRIVATE">PRIVATE</option>
+                                <option value="PUBLIC">PUBLIC</option>
+                            </select>
+
+                            <div class="row g-3">
+                                <!-- Option Card: PRIVATE -->
+                                <div class="col-12 col-md-6">
+                                    <div class="privacy-option-card h-100 d-flex flex-column justify-content-between" 
+                                         id="cardPrivate" 
+                                         onclick="setPrivacy('PRIVATE')">
+                                        <div>
+                                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <div class="bg-secondary bg-opacity-10 text-secondary p-2 rounded-3">
+                                                        <i class="bi bi-shield-lock-fill fs-4 text-primary"></i>
+                                                    </div>
+                                                    <h6 class="fw-bold m-0 text-dark">Riêng tư (Private)</h6>
+                                                </div>
+                                                <i class="bi bi-check-circle-fill text-primary fs-5 check-icon" id="checkPrivate"></i>
+                                            </div>
+                                            <p class="text-muted small mb-0">Chỉ thành viên trong nhóm mới có quyền xem nội dung và truy cập các bảng công việc.</p>
+                                        </div>
+                                        <div class="mt-3 pt-2 border-top">
+                                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill">
+                                                <i class="bi bi-lock me-1"></i>Bảo mật cao
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Option Card: PUBLIC -->
+                                <div class="col-12 col-md-6">
+                                    <div class="privacy-option-card h-100 d-flex flex-column justify-content-between" 
+                                         id="cardPublic" 
+                                         onclick="setPrivacy('PUBLIC')">
+                                        <div>
+                                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <div class="bg-success bg-opacity-10 text-success p-2 rounded-3">
+                                                        <i class="bi bi-globe2 fs-4 text-success"></i>
+                                                    </div>
+                                                    <h6 class="fw-bold m-0 text-dark">Công khai (Public)</h6>
+                                                </div>
+                                                <i class="bi bi-check-circle-fill text-primary fs-5 check-icon" id="checkPublic"></i>
+                                            </div>
+                                            <p class="text-muted small mb-0">Bất kỳ ai có đường dẫn liên kết đều nhìn thấy nhóm. Chỉ thành viên mới có thể chỉnh sửa.</p>
+                                        </div>
+                                        <div class="mt-3 pt-2 border-top">
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill">
+                                                <i class="bi bi-people me-1"></i>Mở cho mọi người
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Mô tả nhóm -->
+                        <div class="mb-4">
+                            <label for="description" class="form-label fw-bold text-dark">Mô tả chi tiết nhóm</label>
+                            <textarea class="form-control" 
+                                      id="description" 
+                                      th:field="*{description}" 
+                                      rows="4" 
+                                      placeholder="Viết vài dòng giới thiệu về mục tiêu, nhiệm vụ hoặc quy định làm việc chung của nhóm..."></textarea>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-flex align-items-center justify-content-end gap-2 pt-3 border-top">
+                            <a th:href="@{/team/{id}(id=${team.id})}" class="btn btn-light rounded-pill px-4 fw-semibold">Hủy bỏ</a>
+                            <button type="submit" class="btn btn-primary rounded-pill px-4 fw-semibold d-flex align-items-center gap-2 shadow-sm">
+                                <i class="bi bi-check-lg fs-5"></i>
+                                <span>Lưu thay đổi</span>
+                            </button>
+                        </div>
+
+                    </form>
+                </div>
+
+                <!-- Danger Zone Card (Story #15 - Delete Team) -->
+                <div class="danger-zone-card p-4 shadow-sm mb-5">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                        <div class="d-flex align-items-start gap-3">
+                            <div class="bg-danger text-white p-2 rounded-3 mt-1 shadow-sm">
+                                <i class="bi bi-exclamation-triangle-fill fs-4"></i>
+                            </div>
+                            <div>
+                                <h5 class="fw-bold text-danger mb-1">Vùng nguy hiểm — Xóa nhóm</h5>
+                                <p class="text-secondary small mb-0" style="max-width: 500px;">
+                                    Xóa vĩnh viễn nhóm này cùng tất cả dữ liệu bảng làm việc và danh sách thành viên. 
+                                    Hành động này <strong>không thể khôi phục</strong>.
+                                </p>
+                            </div>
+                        </div>
+                        <button type="button" 
+                                class="btn btn-danger rounded-pill px-4 fw-semibold d-flex align-items-center gap-2 shadow-sm ms-auto" 
+                                data-bs-toggle="modal" 
+                                data-bs-target="#deleteTeamModal">
+                            <i class="bi bi-trash3-fill"></i>
+                            <span>Xóa nhóm này</span>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Modal Xác nhận xóa Nhóm (Story #15 - Type-to-Confirm) -->
+        <div class="modal fade" id="deleteTeamModal" tabindex="-1" aria-labelledby="deleteTeamModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                    <div class="modal-header bg-danger text-white p-3 px-4">
+                        <h5 class="modal-title fw-bold d-flex align-items-center gap-2" id="deleteTeamModalLabel">
+                            <i class="bi bi-shield-exclamation fs-4"></i>
+                            <span>Xác nhận xóa vĩnh viễn nhóm</span>
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body p-4">
+                        <p class="mb-3 fs-6">
+                            Bạn đang thực hiện xóa nhóm <strong class="text-danger fw-bold fs-5" id="targetTeamName" th:text="${team.name}">Tên nhóm</strong>.
+                        </p>
+                        <div class="alert alert-danger border-0 bg-danger bg-opacity-10 rounded-3 p-3 mb-3">
+                            <div class="fw-bold text-danger mb-2"><i class="bi bi-info-circle-fill me-2"></i>Cảnh báo ảnh hưởng:</div>
+                            <ul class="mb-0 small text-danger ps-3">
+                                <li>Tất cả các Bảng công việc (Boards) trong nhóm sẽ bị xóa sạch.</li>
+                                <li>Tất cả thành viên sẽ bị loại khỏi nhóm này.</li>
+                                <li>Mọi dữ liệu không thể khôi phục lại sau khi xóa.</li>
+                            </ul>
+                        </div>
+                        <div class="mt-3">
+                            <label for="confirmTeamNameInput" class="form-label small fw-bold text-dark mb-1">
+                                Vui lòng nhập đúng tên nhóm <span class="badge bg-danger-subtle text-danger border border-danger-subtle ms-1" th:text="${team.name}">Tên nhóm</span> để mở khóa nút xóa:
+                            </label>
+                            <input type="text" class="form-control" id="confirmTeamNameInput" oninput="checkConfirmDeleteName()" placeholder="Nhập lại tên nhóm chính xác...">
+                        </div>
+                    </div>
+                    <div class="modal-footer bg-light p-3 px-4 d-flex justify-content-end gap-2">
+                        <button type="button" class="btn btn-light rounded-pill px-4 fw-semibold" data-bs-dismiss="modal">Hủy bỏ</button>
+                        <form th:action="@{/team/{id}/delete(id=${team.id})}" method="post" class="d-inline">
+                            <button type="submit" id="btnSubmitDeleteTeam" disabled class="btn btn-danger rounded-pill px-4 fw-semibold d-flex align-items-center gap-2 shadow-sm">
+                                <i class="bi bi-trash3-fill"></i>
+                                <span>Đồng ý xóa vĩnh viễn</span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Script điều khiển thẻ chọn Quyền riêng tư, Gợi ý loại nhóm & Type-to-confirm xóa -->
+    <th:block layout:fragment="scripts">
+        <script th:inline="javascript">
+            const exactTeamName = /*[[${team.name}]]*/ '';
+
+            function setPrivacy(value) {
+                document.getElementById('visibility').value = value;
+                const cardPrivate = document.getElementById('cardPrivate');
+                const cardPublic = document.getElementById('cardPublic');
+
+                if (value === 'PRIVATE') {
+                    cardPrivate.classList.add('selected');
+                    cardPublic.classList.remove('selected');
+                } else {
+                    cardPublic.classList.add('selected');
+                    cardPrivate.classList.remove('selected');
+                }
+            }
+
+            function selectType(typeName) {
+                document.getElementById('type').value = typeName;
+            }
+
+            function checkConfirmDeleteName() {
+                const inputVal = document.getElementById('confirmTeamNameInput').value.trim();
+                const btnDelete = document.getElementById('btnSubmitDeleteTeam');
+                if (inputVal === exactTeamName.trim()) {
+                    btnDelete.removeAttribute('disabled');
+                } else {
+                    btnDelete.setAttribute('disabled', 'disabled');
+                }
+            }
+
+            // Đồng bộ trạng thái ban đầu khi load trang
+            document.addEventListener("DOMContentLoaded", function() {
+                const currentVisibility = document.getElementById('visibility').value;
+                setPrivacy(currentVisibility || 'PRIVATE');
+            });
+        </script>
+    </th:block>
+
+</body>
+</html>

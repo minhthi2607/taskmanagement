@@ -3,6 +3,7 @@ package com.project.taskmanagement.config;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -26,10 +27,17 @@ public class SecurityConfig {
         @Bean
         public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
                 http
+                                // Bật bảo vệ CSRF chống tấn công Cross-Site Request Forgery
+                                .csrf(Customizer.withDefaults())
                                 .authorizeHttpRequests(auth -> auth
-                                                .requestMatchers("/team/create", "/team/*/edit", "/team/*/delete", "/team/*/members/**").authenticated()
-                                                .requestMatchers(HttpMethod.GET, "/", "/team/list", "/team/{id}").permitAll()
-                                                .requestMatchers("/auth/**", "/css/**", "/js/**", "/uploads/**", "/error").permitAll()
+                                                .requestMatchers("/team/create", "/team/*/edit", "/team/*/delete",
+                                                                "/team/*/members/**")
+                                                .authenticated()
+                                                .requestMatchers(HttpMethod.GET, "/", "/team/list", "/team/{id}")
+                                                .permitAll()
+                                                .requestMatchers("/auth/**", "/css/**", "/js/**", "/uploads/**",
+                                                                "/error")
+                                                .permitAll()
                                                 .anyRequest().authenticated())
                                 .formLogin(form -> form
                                                 .loginPage("/auth/login") // trang login tự viết (Thymeleaf)
