@@ -36,7 +36,7 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.GET, "/", "/team/list", "/team/{id}")
                                                 .permitAll()
                                                 .requestMatchers("/auth/**", "/css/**", "/js/**", "/uploads/**",
-                                                                "/error")
+                                                                "/team/accept-invite", "/favicon.ico", "/error")
                                                 .permitAll()
                                                 .anyRequest().authenticated())
                                 .formLogin(form -> form

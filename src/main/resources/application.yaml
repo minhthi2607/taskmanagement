@@ -19,5 +19,18 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
 
+  # Cấu hình gửi mail thật qua Gmail
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: huynhthingocdao1102@gmail.com
+    password: your-app-password    # Thay bằng Mật khẩu ứng dụng 16 ký tự từ Tài khoản Google của bạn
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
 app:
-  upload-dir: uploads/
+  upload-dir: uploads/

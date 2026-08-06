@@ -7,6 +7,8 @@ import com.project.taskmanagement.entity.Team;
 import com.project.taskmanagement.entity.User;
 import com.project.taskmanagement.enums.Visibility;
 import com.project.taskmanagement.service.TeamService;
+import com.project.taskmanagement.service.TeamMemberService;
+import com.project.taskmanagement.service.BoardService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -24,6 +26,8 @@ import java.util.List;
 public class TeamController {
 
     private final TeamService teamService;
+    private final TeamMemberService teamMemberService;
+    private final BoardService boardService;
 
     /**
      * Story #10: Hiển thị trang Form tạo mới 1 nhóm
@@ -96,8 +100,8 @@ public class TeamController {
             RedirectAttributes redirectAttributes) {
         try {
             Team team = teamService.getTeamById(id);
-            Long currentUserId = (principal != null && principal.getUser() != null) ? principal.getUser().getId()
-                    : null;
+            User currentUser = (principal != null && principal.getUser() != null) ? principal.getUser() : null;
+            Long currentUserId = (currentUser != null) ? currentUser.getId() : null;
             boolean isMember = currentUserId != null && teamService.isUserMemberOfTeam(id, currentUserId);
             boolean isAdmin = currentUserId != null && teamService.isUserAdminOfTeam(id, currentUserId);
 
@@ -108,6 +112,8 @@ public class TeamController {
             }
 
             model.addAttribute("team", team);
+            model.addAttribute("members", teamMemberService.getTeamMembers(id));
+            model.addAttribute("boards", boardService.getBoardsByTeamId(id, currentUser));
             model.addAttribute("isMember", isMember);
             model.addAttribute("isAdmin", isAdmin);
 
