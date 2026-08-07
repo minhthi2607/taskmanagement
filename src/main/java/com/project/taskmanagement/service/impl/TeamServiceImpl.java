@@ -11,6 +11,7 @@ import com.project.taskmanagement.repository.TeamMemberRepository;
 import com.project.taskmanagement.repository.TeamRepository;
 import com.project.taskmanagement.repository.UserRepository;
 import com.project.taskmanagement.service.TeamService;
+import com.project.taskmanagement.service.EmailService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +25,7 @@ public class TeamServiceImpl implements TeamService {
     private final TeamRepository teamRepository;
     private final TeamMemberRepository teamMemberRepository;
     private final UserRepository userRepository;
+    private final EmailService emailService;
 
     @Override
     @Transactional
@@ -85,9 +87,23 @@ public class TeamServiceImpl implements TeamService {
             throw new SecurityException("Bạn không có quyền xóa nhóm này!");
         }
 
-        // 2. Lấy đối tượng Team và xóa
+        // 2. Lấy đối tượng Team và danh sách email thành viên trước khi xóa
         Team team = getTeamById(teamId);
+        String teamName = team.getName();
+
+        List<TeamMember> members = teamMemberRepository.findByTeamId(teamId);
+        List<String> memberEmails = members.stream()
+                .filter(m -> m.getUser() != null && m.getUser().getEmail() != null)
+                .map(m -> m.getUser().getEmail())
+                .distinct()
+                .toList();
+
+        // 3. Xóa nhóm
         teamRepository.delete(team);
+
+        // 4. Gửi thông báo đến các thành viên nhóm (Story #15)
+        String deleterName = (currentUser != null) ? currentUser.getDisplayName() : "Quản trị viên";
+        emailService.sendTeamDeletionNotification(teamName, memberEmails, deleterName);
     }
 
     @Override
