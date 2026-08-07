@@ -36,7 +36,7 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.GET, "/", "/team/list", "/team/{id}")
                                                 .permitAll()
                                                 .requestMatchers("/auth/**", "/css/**", "/js/**", "/uploads/**",
-                                                                "/team/accept-invite", "/favicon.ico", "/error")
+                                                                "/favicon.ico", "/error")
                                                 .permitAll()
                                                 .anyRequest().authenticated())
                                 .formLogin(form -> form
@@ -45,7 +45,7 @@ public class SecurityConfig {
                                                                                    // login
                                                 .usernameParameter("email") // đăng nhập bằng email, không phải username
                                                 .passwordParameter("password")
-                                                .defaultSuccessUrl("/", true) // đăng nhập thành công -> Trang chủ
+                                                .defaultSuccessUrl("/", false) // chuyển hướng về trang yêu cầu ban đầu (RequestCache)
                                                 .failureUrl("/auth/login?error=true")
                                                 .permitAll())
                                 .logout(logout -> logout

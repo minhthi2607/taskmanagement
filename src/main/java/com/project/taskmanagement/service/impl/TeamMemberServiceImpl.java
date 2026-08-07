@@ -62,47 +62,40 @@ public class TeamMemberServiceImpl implements TeamMemberService {
             throw new IllegalArgumentException("Người dùng với email '" + trimmedEmail + "' đã là thành viên của nhóm này!");
         }
 
-        // 3. Nếu user đã có tài khoản trên hệ thống -> Thêm trực tiếp vào nhóm ngay & gửi thông báo
-        if (existingUserOpt.isPresent()) {
-            User existingUser = existingUserOpt.get();
-            TeamMember newMember = TeamMember.builder()
-                    .teamId(teamId)
-                    .userId(existingUser.getId())
-                    .role(role != null ? role : Role.MEMBER)
-                    .joinedAt(LocalDateTime.now())
-                    .build();
-            teamMemberRepository.save(newMember);
+        // 3. Kiểm tra xem đã có lời mời PENDING nào cho email này trong nhóm chưa
+        Optional<Invitation> pendingInviteOpt = invitationRepository.findByTeamIdAndEmailAndStatus(
+                teamId, trimmedEmail, InvitationStatus.PENDING);
 
-            // Gửi email thông báo đã được thêm vào nhóm
-            emailService.sendTeamInvitationEmail(
-                    trimmedEmail,
-                    team.getName(),
-                    currentUser.getDisplayName(),
-                    baseUrl + "/team/" + teamId,
-                    role == Role.ADMIN ? "Quản trị nhóm" : "Thành viên"
-            );
-            return null;
-        }
-
-        // 4. Nếu user chưa có tài khoản -> Tạo Invitation token & gửi email mời với link kích hoạt
+        Invitation invitation;
         String token = UUID.randomUUID().toString();
-        Invitation invitation = Invitation.builder()
-                .teamId(teamId)
-                .email(trimmedEmail)
-                .role(role != null ? role : Role.MEMBER)
-                .token(token)
-                .status(InvitationStatus.PENDING)
-                .build();
+
+        if (pendingInviteOpt.isPresent()) {
+            // Đã có lời mời PENDING cũ -> Cập nhật vai trò mới & Token mới để gửi lại email
+            invitation = pendingInviteOpt.get();
+            invitation.setRole(role != null ? role : Role.MEMBER);
+            invitation.setToken(token);
+            invitation.setCreatedAt(LocalDateTime.now());
+        } else {
+            // Chưa có -> Tạo mới bản ghi Invitation PENDING
+            invitation = Invitation.builder()
+                    .teamId(teamId)
+                    .email(trimmedEmail)
+                    .role(role != null ? role : Role.MEMBER)
+                    .token(token)
+                    .status(InvitationStatus.PENDING)
+                    .build();
+        }
 
         Invitation savedInvite = invitationRepository.save(invitation);
 
+        // 4. Mọi trường hợp đều gửi email mời chứa link chấp nhận lời mời
         String inviteUrl = baseUrl + "/team/accept-invite?token=" + token;
         emailService.sendTeamInvitationEmail(
                 trimmedEmail,
                 team.getName(),
                 currentUser.getDisplayName(),
                 inviteUrl,
-                role == Role.ADMIN ? "Quản trị nhóm" : "Thành viên"
+                (savedInvite.getRole() == Role.ADMIN) ? "Quản trị nhóm" : "Thành viên"
         );
 
         return savedInvite;
@@ -149,13 +142,12 @@ public class TeamMemberServiceImpl implements TeamMemberService {
             throw new SecurityException("Chỉ Quản trị nhóm mới có quyền loại thành viên ra khỏi nhóm!");
         }
 
-        // 2. Không cho tự loại chính mình nếu là Admin duy nhất
+        // 2. Không thể loại bỏ Chủ sở hữu (người tạo nhóm)
         Team team = teamRepository.findById(teamId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy nhóm!"));
 
-        if (team.getCreatedBy().equals(targetUserId) && !currentUser.getId().equals(targetUserId)) {
-            // Không cho xoá người tạo nhóm ngoại trừ admin cấp cao hơn
-            log.info("Xóa thành viên là người tạo nhóm");
+        if (team.getCreatedBy().equals(targetUserId)) {
+            throw new SecurityException("Không thể loại bỏ Chủ sở hữu (người tạo nhóm) ra khỏi nhóm!");
         }
 
         TeamMember member = teamMemberRepository.findByTeamIdAndUserId(teamId, targetUserId)
@@ -174,6 +166,14 @@ public class TeamMemberServiceImpl implements TeamMemberService {
         // 1. Kiểm tra quyền Quản trị nhóm
         if (!teamService.isUserAdminOfTeam(teamId, currentUser.getId())) {
             throw new SecurityException("Chỉ Quản trị nhóm mới có quyền thay đổi vai trò thành viên!");
+        }
+
+        // 2. Không thể thay đổi vai trò của Chủ sở hữu
+        Team team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy nhóm!"));
+
+        if (team.getCreatedBy().equals(targetUserId)) {
+            throw new SecurityException("Không thể thay đổi vai trò của Chủ sở hữu nhóm!");
         }
 
         TeamMember member = teamMemberRepository.findByTeamIdAndUserId(teamId, targetUserId)

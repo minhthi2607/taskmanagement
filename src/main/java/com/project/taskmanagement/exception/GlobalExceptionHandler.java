@@ -74,7 +74,7 @@ public class GlobalExceptionHandler {
             return org.springframework.http.ResponseEntity.notFound().build();
         }
         log.error("Unhandled Exception at {}: ", request.getRequestURI(), ex);
-        model.addAttribute("errorMessage", "Đã xảy ra lỗi hệ thống: " + ex.getMessage());
+        model.addAttribute("errorMessage", "Đã xảy ra lỗi hệ thống. Vui lòng thử lại sau!");
         return "error/500";
     }
 }

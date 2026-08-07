@@ -25,6 +25,7 @@ public class TeamServiceImpl implements TeamService {
     private final TeamRepository teamRepository;
     private final TeamMemberRepository teamMemberRepository;
     private final UserRepository userRepository;
+    private final EmailService emailService;
 
     @Override
     @Transactional
@@ -75,8 +76,6 @@ public class TeamServiceImpl implements TeamService {
 
         return teamRepository.save(team);
     }
-
-    private final EmailService emailService;
 
     @Override
     @Transactional
