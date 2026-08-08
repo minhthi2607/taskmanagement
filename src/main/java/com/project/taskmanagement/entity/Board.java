@@ -1,9 +1,12 @@
 package com.project.taskmanagement.entity;
 
+import com.project.taskmanagement.enums.BoardVisibility;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "boards")
@@ -28,6 +31,10 @@ public class Board {
     @Column(nullable = false)
     private String name;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private BoardVisibility visibility;
+
     @Column(name = "created_by", nullable = false)
     private Long createdBy;
 
@@ -36,6 +43,18 @@ public class Board {
     private User creator;
 
     private LocalDateTime createdAt;
+
+    @Builder.Default
+    @OneToMany(mappedBy = "board", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<BoardMember> members = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "board", cascade = CascadeType.ALL)
+    private List<TaskList> taskLists = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "board", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Label> labels = new ArrayList<>();
 
     @PrePersist
     public void prePersist() {

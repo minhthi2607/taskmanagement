@@ -60,9 +60,9 @@
                                          isLong=${hasDesc and #strings.length(team.description) > 160}">
                                 <span th:if="${!isLong}" th:text="${desc}">Mô tả ngắn</span>
                                 <span th:if="${isLong}">
-                                    <span th:id="${'listDescShort-' + team.id}" th:text="${#strings.substring(desc, 0, 160) + '...'}">Mô tả rút gọn</span>
-                                    <span th:id="${'listDescFull-' + team.id}" class="d-none" th:text="${desc}">Mô tả đầy đủ</span>
-                                    <button type="button" class="desc-toggle-btn" th:id="${'listDescBtn-' + team.id}" th:onclick="${'toggleListDescription(' + team.id + ')'}">Xem thêm</button>
+                                    <span th:id="|listDescShort-${team.id}|" th:text="${#strings.substring(desc, 0, 160) + '...'}">Mô tả rút gọn</span>
+                                    <span th:id="|listDescFull-${team.id}|" class="d-none" th:text="${desc}">Mô tả đầy đủ</span>
+                                    <button type="button" class="desc-toggle-btn" th:id="|listDescBtn-${team.id}|" th:onclick="|toggleListDescription(${team.id})|">Xem thêm</button>
                                 </span>
                             </div>
                         </div>

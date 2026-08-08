@@ -3,6 +3,7 @@ package com.project.taskmanagement.service.impl;
 import com.project.taskmanagement.entity.Board;
 import com.project.taskmanagement.entity.Team;
 import com.project.taskmanagement.entity.User;
+// import com.project.taskmanagement.enums.BoardVisibility;
 import com.project.taskmanagement.enums.Visibility;
 import com.project.taskmanagement.exception.ResourceNotFoundException;
 import com.project.taskmanagement.repository.BoardRepository;
@@ -36,7 +37,8 @@ public class BoardServiceImpl implements BoardService {
 
         // Kiểm tra xem người dùng có phải thành viên hoặc admin của nhóm không
         if (!teamService.isUserMemberOfTeam(teamId, currentUser.getId())) {
-            throw new SecurityException("Chỉ thành viên hoặc Quản trị nhóm mới có quyền tạo bảng công việc trong nhóm này!");
+            throw new SecurityException(
+                    "Chỉ thành viên hoặc Quản trị nhóm mới có quyền tạo bảng công việc trong nhóm này!");
         }
 
         String boardName = name != null ? name.trim() : "";

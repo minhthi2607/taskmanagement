@@ -1,4 +1,4 @@
--- Script khởi tạo CSDL cho ứng dụng Task Management (Sprint 1)
+-- Script khởi tạo CSDL cho ứng dụng Task Management (Sprint 1 + Sprint 2)
 -- Database Engine: MySQL 8.0+
 
 CREATE DATABASE IF NOT EXISTS `taskmanagement_db` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -6,6 +6,14 @@ USE `taskmanagement_db`;
 
 -- Xóa bảng cũ nếu tồn tại (theo thứ tự ngược lại của ràng buộc khóa ngoại)
 DROP TABLE IF EXISTS `invitations`;
+DROP TABLE IF EXISTS `card_comments`;
+DROP TABLE IF EXISTS `card_attachments`;
+DROP TABLE IF EXISTS `card_members`;
+DROP TABLE IF EXISTS `card_labels`;
+DROP TABLE IF EXISTS `cards`;
+DROP TABLE IF EXISTS `labels`;
+DROP TABLE IF EXISTS `task_lists`;
+DROP TABLE IF EXISTS `board_members`;
 DROP TABLE IF EXISTS `boards`;
 DROP TABLE IF EXISTS `team_members`;
 DROP TABLE IF EXISTS `teams`;
@@ -47,26 +55,134 @@ CREATE TABLE `team_members` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 4. Bảng boards (Bảng công việc)
+-- [Sprint 2] Bổ sung cột `visibility` (GEMINI.md mục 6.4)
 CREATE TABLE `boards` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
     `team_id` BIGINT NOT NULL,
     `name` VARCHAR(255) NOT NULL,
+    `visibility` ENUM('PRIVATE', 'GROUP', 'PUBLIC') NOT NULL,
     `created_by` BIGINT NOT NULL,
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT `fk_boards_team` FOREIGN KEY (`team_id`) REFERENCES `teams` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_boards_created_by` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 5. Bảng invitations (Lời mời tham gia nhóm)
+-- 5. Bảng board_members (Thành viên bảng - Bảng trung gian User - Board) [Sprint 2 - MỚI]
+-- GEMINI.md mục 6.5
+CREATE TABLE `board_members` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `board_id` BIGINT NOT NULL,
+    `user_id` BIGINT NOT NULL,
+    `role` ENUM('ADMIN', 'MEMBER') NOT NULL,
+    `joined_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT `uk_board_user` UNIQUE (`board_id`, `user_id`),
+    CONSTRAINT `fk_board_members_board` FOREIGN KEY (`board_id`) REFERENCES `boards` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_board_members_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 6. Bảng task_lists (Danh sách công việc - cột trong Board) [Sprint 2 - MỚI]
+-- GEMINI.md mục 6.6
+CREATE TABLE `task_lists` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `board_id` BIGINT NOT NULL,
+    `name` VARCHAR(255) NOT NULL,
+    `position` INT NULL,
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT `fk_task_lists_board` FOREIGN KEY (`board_id`) REFERENCES `boards` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 7. Bảng labels (Kho nhãn dùng chung của Board) [Sprint 2 - MỚI]
+-- GEMINI.md mục 6.8
+CREATE TABLE `labels` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `board_id` BIGINT NOT NULL,
+    `name` VARCHAR(255) NULL,
+    `color` VARCHAR(20) NULL,
+    CONSTRAINT `fk_labels_board` FOREIGN KEY (`board_id`) REFERENCES `boards` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 8. Bảng cards (Thẻ công việc) [Sprint 2 - MỚI]
+-- GEMINI.md mục 6.7
+CREATE TABLE `cards` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `task_list_id` BIGINT NOT NULL,
+    `title` VARCHAR(255) NOT NULL,
+    `description` TEXT NULL,
+    `position` INT NULL,
+    `created_by` BIGINT NOT NULL,
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NULL,
+    CONSTRAINT `fk_cards_task_list` FOREIGN KEY (`task_list_id`) REFERENCES `task_lists` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_cards_created_by` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 9. Bảng card_labels (Bảng trung gian Card - Label) [Sprint 2 - MỚI]
+-- GEMINI.md mục 6.9
+CREATE TABLE `card_labels` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `card_id` BIGINT NOT NULL,
+    `label_id` BIGINT NOT NULL,
+    CONSTRAINT `uk_card_label` UNIQUE (`card_id`, `label_id`),
+    CONSTRAINT `fk_card_labels_card` FOREIGN KEY (`card_id`) REFERENCES `cards` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_card_labels_label` FOREIGN KEY (`label_id`) REFERENCES `labels` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 10. Bảng card_members (Thành viên được gán vào thẻ) [Sprint 2 - MỚI]
+-- GEMINI.md mục 6.10
+CREATE TABLE `card_members` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `card_id` BIGINT NOT NULL,
+    `user_id` BIGINT NOT NULL,
+    CONSTRAINT `uk_card_user` UNIQUE (`card_id`, `user_id`),
+    CONSTRAINT `fk_card_members_card` FOREIGN KEY (`card_id`) REFERENCES `cards` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_card_members_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 11. Bảng card_attachments (File đính kèm) [Sprint 2 - MỚI]
+-- GEMINI.md mục 6.11
+CREATE TABLE `card_attachments` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `card_id` BIGINT NOT NULL,
+    `file_url` VARCHAR(500) NOT NULL,
+    `file_name` VARCHAR(255) NOT NULL,
+    `uploaded_by` BIGINT NOT NULL,
+    `uploaded_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT `fk_card_attachments_card` FOREIGN KEY (`card_id`) REFERENCES `cards` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_card_attachments_uploaded_by` FOREIGN KEY (`uploaded_by`) REFERENCES `users` (`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 12. Bảng card_comments (Bình luận trong thẻ) [Sprint 2 - MỚI]
+-- GEMINI.md mục 6.12
+CREATE TABLE `card_comments` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `card_id` BIGINT NOT NULL,
+    `user_id` BIGINT NOT NULL,
+    `content` TEXT NULL,
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT `fk_card_comments_card` FOREIGN KEY (`card_id`) REFERENCES `cards` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_card_comments_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 13. Bảng invitations (Lời mời tham gia Team hoặc Board)
+-- [Sprint 2] Bổ sung cột `board_id` (nullable), nới `team_id` thành nullable — dùng chung
+-- cho cả 2 luồng mời (GEMINI.md mục 6.13). Đúng 1 trong 2 cột team_id/board_id phải có giá trị,
+-- ràng buộc bằng CHECK constraint bên dưới làm lớp bảo vệ cuối cùng ở tầng DB (validate chính vẫn
+-- ở tầng Service khi tạo Invitation).
 CREATE TABLE `invitations` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
-    `team_id` BIGINT NOT NULL,
+    `team_id` BIGINT NULL,
+    `board_id` BIGINT NULL,
     `email` VARCHAR(255) NOT NULL,
     `role` ENUM('ADMIN', 'MEMBER') NOT NULL,
     `token` VARCHAR(255) NOT NULL UNIQUE,
     `status` ENUM('PENDING', 'ACCEPTED', 'EXPIRED') NOT NULL,
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT `fk_invitations_team` FOREIGN KEY (`team_id`) REFERENCES `teams` (`id`) ON DELETE CASCADE
+    CONSTRAINT `fk_invitations_team` FOREIGN KEY (`team_id`) REFERENCES `teams` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_invitations_board` FOREIGN KEY (`board_id`) REFERENCES `boards` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `chk_invitation_target` CHECK (
+        (`team_id` IS NOT NULL AND `board_id` IS NULL) OR
+        (`team_id` IS NULL AND `board_id` IS NOT NULL)
+    )
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ========================================================
@@ -78,4 +194,3 @@ CREATE TABLE `invitations` (
 -- Mật khẩu: 123456 (Đã mã hóa BCrypt)
 INSERT INTO `users` (`id`, `email`, `display_name`, `phone`, `password`, `avatar_url`)
 VALUES (1, 'admin@gmail.com', 'Quản trị viên', '0912345678', '$2b$10$uFDWtTbFL00ipKmu74R3qedJj9vcDQBvpu6BlpA4dZhPHbGPPcTEm', NULL);
-
