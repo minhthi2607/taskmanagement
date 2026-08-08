@@ -47,6 +47,9 @@ Thumbs.db
 application-local.yaml
 application-local.properties
 
+# Local config chứa secret - không commit
+application.yaml
+
 ### AI Tools & Custom Configurations ###
 .agents/
 .claude/

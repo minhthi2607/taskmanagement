@@ -104,8 +104,7 @@ public class UserController {
         }
 
         try {
-            User updatedUser = userService.updateProfile(principal.getUser(), userProfileDto, avatarFile);
-            request.getSession().setAttribute("SESSION_USER", updatedUser);
+            userService.updateProfile(principal.getUser(), userProfileDto, avatarFile);
             redirectAttributes.addFlashAttribute("successMessage", "Cập nhật thông tin cá nhân thành công!");
             return "redirect:/user/profile";
         } catch (Exception e) {

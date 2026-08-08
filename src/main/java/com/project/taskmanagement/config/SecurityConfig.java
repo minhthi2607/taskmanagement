@@ -10,6 +10,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -17,6 +18,7 @@ import org.springframework.security.web.SecurityFilterChain;
 public class SecurityConfig {
 
         private final CustomUserDetailsService userDetailsService;
+        private final LoginInputValidationFilter loginInputValidationFilter;
 
         // Mã hoá password khi đăng ký, so khớp password khi đăng nhập.
         @Bean
@@ -54,7 +56,8 @@ public class SecurityConfig {
                                                 .logoutUrl("/auth/logout")
                                                 .logoutSuccessUrl("/auth/login?logout=true")
                                                 .permitAll())
-                                .userDetailsService(userDetailsService);
+                                .userDetailsService(userDetailsService)
+                                .addFilterBefore(loginInputValidationFilter, UsernamePasswordAuthenticationFilter.class);
 
                 return http.build();
         }
