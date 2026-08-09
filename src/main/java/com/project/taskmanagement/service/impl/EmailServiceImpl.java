@@ -99,4 +99,41 @@ public class EmailServiceImpl implements EmailService {
                      toEmail, teamName, inviteUrl);
         }
     }
+
+    @Override
+    @Async
+    public void sendBoardInvitationEmail(String toEmail, String boardName, String inviterName, String inviteUrl, String roleName) {
+        String subject = "[TaskManagement] Lời mời tham gia bảng '" + boardName + "'";
+        String body = String.format(
+                "Xin chào,\n\nBạn vừa nhận được lời mời tham gia bảng công việc '%s' trên TaskManagement với vai trò '%s' từ %s.\n\n" +
+                "Vui lòng truy cập đường dẫn sau để chấp nhận lời mời:\n%s\n\n" +
+                "Trân trọng,\nĐội ngũ TaskManagement",
+                boardName, roleName, inviterName, inviteUrl
+        );
+
+        boolean sent = false;
+        try {
+            if (mailSender != null) {
+                SimpleMailMessage message = new SimpleMailMessage();
+                message.setTo(toEmail);
+                message.setSubject(subject);
+                message.setText(body);
+                mailSender.send(message);
+                sent = true;
+                log.info("Đã gửi email mời tham gia bảng '{}' tới: {}", boardName, toEmail);
+            }
+        } catch (Exception e) {
+            log.warn("Không thể gửi qua SMTP server: {}. Chuyển sang ghi log hệ thống.", e.getMessage());
+        }
+
+        if (!sent) {
+            log.info("\n========================================================================\n" +
+                     "📩 [THÔNG BÁO LỜI MỜI THAM GIA BẢNG]\n" +
+                     "Đến: {}\n" +
+                     "Bảng: {}\n" +
+                     "👉 Link chấp nhận lời mời: {}\n" +
+                     "========================================================================",
+                     toEmail, boardName, inviteUrl);
+        }
+    }
 }
