@@ -1,227 +1,210 @@
 <!DOCTYPE html>
-<html lang="vi"
-      xmlns:th="http://www.thymeleaf.org"
-      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
-      layout:decorate="~{layout/main}">
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+    xmlns:sec="http://www.thymeleaf.org/extras/spring-security" layout:decorate="~{layout/main}">
+
 <head>
     <title>Trang chủ - Không gian làm việc</title>
 </head>
+
 <body>
 
     <!-- Nội dung chính Trang chủ (Story #1) -->
     <div layout:fragment="content">
-        
-        <!-- Header phần Body -->
-        <div class="d-flex align-items-center justify-content-between mb-4">
-            <div>
-                <h3 class="fw-bold mb-1">Không gian làm việc</h3>
-                <p class="text-muted mb-0">Quản lý các bảng công việc và nhóm làm việc của bạn</p>
-            </div>
-            <!-- Nút Tạo nhóm nhanh (Story #10 Placeholder trigger) -->
-            <button class="btn btn-primary d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#createTeamModal">
-                <i class="bi bi-plus-lg"></i>
-                <span>Tạo nhóm mới</span>
-            </button>
+
+        <!-- Flash Notification Messages -->
+        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show shadow-sm py-2 px-3" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i>
+            <span th:text="${successMessage}">Thành công</span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show shadow-sm py-2 px-3" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            <span th:text="${errorMessage}">Lỗi</span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
 
         <!-- ==================================================================================== -->
-        <!-- KHUNG 1: DANH SÁCH BẢNG TỰ TẠO (PHÂN LOẠI THEO NHÓM) - Story #1                      -->
+        <!-- TRƯỜNG HỢP 1: NGƯỜI DÙNG CHƯA ĐĂNG NHẬP (Chế độ xem Khách / Guest View)                -->
         <!-- ==================================================================================== -->
-        <section class="mb-5">
-            <div class="d-flex align-items-center gap-2 mb-3">
-                <i class="bi bi-person-workspace text-primary fs-4"></i>
-                <h5 class="fw-bold m-0">Danh sách bảng tự tạo</h5>
-                <span class="badge bg-primary-subtle text-primary rounded-pill">Quản trị</span>
+        <div sec:authorize="isAnonymous()">
+            <!-- Header phần Body chung của Khung giao diện -->
+            <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+                <div>
+                    <h3 class="fw-bold mb-1 fs-4">Không gian làm việc</h3>
+                    <p class="text-muted mb-0 small">Quản lý các bảng công việc và nhóm làm việc của bạn</p>
+                </div>
             </div>
 
-            <!-- 
-                COMMENT HƯỚNG DẪN DÀNH CHO SPRINT 2 / CÁC BẠN GHÉP DATA:
-                Dùng th:each="teamGroup : ${createdTeamsWithBoards}" để lặp danh sách nhóm mà User tự tạo:
-                
-                <div th:each="teamGroup : ${createdTeamsWithBoards}" class="card border-0 bg-white shadow-sm mb-4">
-                    <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center pt-3 px-3">
-                        <h6 class="fw-bold m-0 text-dark">
-                            <i class="bi bi-people-fill me-2 text-primary"></i>
-                            <span th:text="${teamGroup.team.name}">Tên Nhóm Tự Tạo</span>
-                        </h6>
-                        <a th:href="@{/team/{id}(id=${teamGroup.team.id})}" class="btn btn-sm btn-light">Xem chi tiết nhóm</a>
+            <!-- Khung thông báo Khách chưa đăng nhập -->
+            <div class="card border-0 shadow-sm p-4 p-md-5 mb-4 rounded-4 bg-white text-center">
+                <div class="py-2">
+                    <div class="mb-3">
+                        <i class="bi bi-shield-lock text-primary display-4"></i>
                     </div>
-                    <div class="card-body">
-                        <div class="row g-3">
-                            <div th:each="board : ${teamGroup.boards}" class="col-12 col-sm-6 col-md-4 col-lg-3">
-                                <a th:href="@{/board/{id}(id=${board.id})}" class="board-card">
-                                    <div class="board-card-banner bg-gradient-blue"></div>
-                                    <h6 class="board-card-title" th:text="${board.name}">Tên Bảng</h6>
-                                    <div class="board-card-meta">
-                                        <span><i class="bi bi-clock me-1"></i>Vừa cập nhật</span>
+                    <h4 class="fw-bold mb-2 fs-5">Bạn đang ở chế độ xem Khách</h4>
+                    <p class="text-muted max-w-600 mx-auto mb-4 small" style="max-width: 600px;">
+                        Giao diện ứng dụng hiện đang hiển thị xem trước. Để xem danh sách nhóm, tạo không gian làm việc và thực hiện các thao tác quản lý công việc, vui lòng đăng nhập vào tài khoản của bạn.
+                    </p>
+                    <div class="d-flex justify-content-center gap-3">
+                        <a th:href="@{/auth/login}" class="btn btn-primary px-4 py-2 fw-semibold btn-sm">
+                            <i class="bi bi-box-arrow-in-right me-2"></i>Đăng nhập ngay
+                        </a>
+                        <a th:href="@{/auth/register}" class="btn btn-outline-primary px-4 py-2 fw-semibold btn-sm">
+                            <i class="bi bi-person-plus me-2"></i>Đăng ký tài khoản
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Khung xem trước cấu trúc tính năng -->
+            <div class="row g-3 text-center mt-2 opacity-75">
+                <div class="col-md-4">
+                    <div class="card border-0 bg-light p-3 h-100 rounded-3">
+                        <div class="feature-icon text-primary mb-2">
+                            <i class="bi bi-people-fill fs-2"></i>
+                        </div>
+                        <h6 class="fw-bold mb-1">Quản lý Nhóm</h6>
+                        <p class="text-muted small mb-0">Tạo không gian làm việc nhóm, mời thành viên và phân quyền linh hoạt.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card border-0 bg-light p-3 h-100 rounded-3">
+                        <div class="feature-icon text-primary mb-2">
+                            <i class="bi bi-kanban fs-2"></i>
+                        </div>
+                        <h6 class="fw-bold mb-1">Bảng công việc</h6>
+                        <p class="text-muted small mb-0">Trực quan hóa tiến độ công việc với các bảng Kanban tiện lợi.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card border-0 bg-light p-3 h-100 rounded-3">
+                        <div class="feature-icon text-primary mb-2">
+                            <i class="bi bi-shield-check fs-2"></i>
+                        </div>
+                        <h6 class="fw-bold mb-1">Quyền riêng tư</h6>
+                        <p class="text-muted small mb-0">Tùy chọn Công khai hoặc Riêng tư bảo vệ dữ liệu công việc của nhóm.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================================================================================== -->
+        <!-- TRƯỜNG HỢP 2: NGƯỜI DÙNG ĐÃ ĐÃNG NHẬP (Hiển thị Data & Thao tác tương tác)           -->
+        <!-- ==================================================================================== -->
+        <div sec:authorize="isAuthenticated()">
+            <!-- Header phần Body -->
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <div>
+                    <h3 class="fw-bold mb-1 fs-4">Không gian làm việc</h3>
+                    <p class="text-muted mb-0 small">Quản lý các bảng công việc và nhóm làm việc của bạn</p>
+                </div>
+                <!-- Nút Tạo nhóm nhanh (Story #10) -->
+                <a th:href="@{/team/create}" class="btn btn-primary btn-sm d-flex align-items-center gap-2 px-3 shadow-sm">
+                    <i class="bi bi-plus-lg"></i>
+                    <span>Tạo nhóm mới</span>
+                </a>
+            </div>
+
+            <!-- KHUNG 1: DANH SÁCH BẢNG TỰ TẠO (PHÂN LOẠI THEO NHÓM) - Story #1 -->
+            <section class="mb-4">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-person-workspace text-primary fs-5"></i>
+                        <h5 class="fw-bold m-0 fs-5">Danh sách nhóm của bạn</h5>
+                        <span class="badge bg-primary-subtle text-primary rounded-pill">Quản trị / Thành viên</span>
+                    </div>
+                    <a th:href="@{/team/list}" class="btn btn-sm btn-link text-decoration-none">Xem tất cả nhóm <i
+                            class="bi bi-arrow-right"></i></a>
+                </div>
+
+                <!-- Danh sách nhóm động thực tế -->
+                <div class="row g-3" th:if="${userTeamsAlphabetical != null and !#lists.isEmpty(userTeamsAlphabetical)}">
+                    <div th:each="team : ${userTeamsAlphabetical}" class="col-12 col-md-6 col-lg-4">
+                        <div class="card border-0 bg-white shadow-sm h-100 p-3 hover-shadow transition">
+                            <div class="card-body d-flex flex-column justify-content-between p-2">
+                                <div>
+                                    <div class="d-flex align-items-center justify-content-between mb-2">
+                                        <span class="badge bg-light text-dark border" th:text="${team.type}">Loại
+                                            nhóm</span>
+                                        <span th:if="${team.visibility.name() == 'PUBLIC'}"
+                                            class="badge bg-success-subtle text-success">
+                                            <i class="bi bi-globe me-1"></i>Công khai
+                                        </span>
+                                        <span th:if="${team.visibility.name() == 'PRIVATE'}"
+                                            class="badge bg-secondary-subtle text-secondary">
+                                            <i class="bi bi-lock-fill me-1"></i>Riêng tư
+                                        </span>
                                     </div>
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            -->
-
-            <!-- Placeholder UI Visual cho Khung 1 (Tự tạo) -->
-            <div class="card border-0 bg-white shadow-sm mb-4">
-                <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center pt-3 px-3">
-                    <div class="d-flex align-items-center gap-2">
-                        <i class="bi bi-folder-fill text-primary fs-5"></i>
-                        <h6 class="fw-bold m-0 text-dark">Nhóm: Dev Team (Quản trị)</h6>
-                    </div>
-                    <a href="#team1" class="btn btn-sm btn-outline-secondary">
-                        <i class="bi bi-gear me-1"></i> Quản lý nhóm
-                    </a>
-                </div>
-                <div class="card-body">
-                    <div class="row g-3">
-                        <!-- Card Bảng 1 -->
-                        <div class="col-12 col-sm-6 col-md-4 col-lg-3">
-                            <a href="#" class="board-card">
-                                <div class="board-card-banner bg-gradient-blue"></div>
-                                <h6 class="board-card-title">Sprint 1 - Foundation Architecture</h6>
-                                <div class="board-card-meta">
-                                    <span><i class="bi bi-kanban me-1"></i>Board #1</span>
-                                    <span class="badge bg-secondary-subtle text-secondary">Dev Team</span>
+                                    <h5 class="card-title fw-bold mb-2 fs-5">
+                                        <a th:href="@{/team/{id}(id=${team.id})}"
+                                            class="text-decoration-none text-dark hover-primary" th:text="${team.name}">Tên
+                                            nhóm</a>
+                                    </h5>
+                                    <!-- Mô tả 160 ký tự & Xem thêm (Chức năng 2) -->
+                                    <div class="card-text text-muted small mb-3 desc-text"
+                                        th:with="hasDesc=${team.description != null and !#strings.isEmpty(team.description)},
+                                                 desc=${hasDesc ? team.description : 'Chưa có mô tả'},
+                                                 isLong=${hasDesc and #strings.length(team.description) > 160}">
+                                        <span th:if="${!isLong}" th:text="${desc}">Mô tả ngắn</span>
+                                        <span th:if="${isLong}">
+                                            <span th:id="|homeDescShort-${team.id}|" th:text="${#strings.substring(desc, 0, 160) + '...'}">Mô tả rút gọn</span>
+                                            <span th:id="|homeDescFull-${team.id}|" class="d-none" th:text="${desc}">Mô tả đầy đủ</span>
+                                            <button type="button" class="desc-toggle-btn" th:id="|homeDescBtn-${team.id}|" th:onclick="|toggleHomeDescription(${team.id})|">Xem thêm</button>
+                                        </span>
+                                    </div>
                                 </div>
-                            </a>
-                        </div>
-                        <!-- Card Bảng 2 -->
-                        <div class="col-12 col-sm-6 col-md-4 col-lg-3">
-                            <a href="#" class="board-card">
-                                <div class="board-card-banner bg-gradient-purple"></div>
-                                <h6 class="board-card-title">Backend REST & Security Setup</h6>
-                                <div class="board-card-meta">
-                                    <span><i class="bi bi-kanban me-1"></i>Board #2</span>
-                                    <span class="badge bg-secondary-subtle text-secondary">Dev Team</span>
+
+                                <div class="pt-2 border-top d-flex align-items-center justify-content-between mt-2">
+                                    <span class="text-muted small">
+                                        <i class="bi bi-people me-1"></i>
+                                        <span th:text="${team.members != null ? #lists.size(team.members) : 0}">0</span>
+                                        thành viên
+                                    </span>
+                                    <a th:href="@{/team/{id}(id=${team.id})}" class="btn btn-sm btn-outline-primary px-3">
+                                        Xem chi tiết <i class="bi bi-arrow-right ms-1"></i>
+                                    </a>
                                 </div>
-                            </a>
-                        </div>
-                        <!-- Card Tạo bảng mới (Placeholder Sprint 2) -->
-                        <div class="col-12 col-sm-6 col-md-4 col-lg-3">
-                            <a href="#" class="board-card add-board-card">
-                                <i class="bi bi-plus-lg fs-4"></i>
-                                <span>Tạo bảng mới</span>
-                            </a>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-        </section>
-
-        <!-- ==================================================================================== -->
-        <!-- KHUNG 2: DANH SÁCH BẢNG ĐƯỢC GÁN LÀM THÀNH VIÊN (PHÂN LOẠI THEO NHÓM) - Story #1    -->
-        <!-- ==================================================================================== -->
-        <section class="mb-4">
-            <div class="d-flex align-items-center gap-2 mb-3">
-                <i class="bi bi-people text-success fs-4"></i>
-                <h5 class="fw-bold m-0">Danh sách bảng được gán làm thành viên</h5>
-                <span class="badge bg-success-subtle text-success rounded-pill">Thành viên</span>
-            </div>
-
-            <!-- 
-                COMMENT HƯỚNG DẪN DÀNH CHO SPRINT 2 / CÁC BẠN GHÉP DATA:
-                Dùng th:each="teamGroup : ${joinedTeamsWithBoards}" để lặp danh sách nhóm mà User tham gia với vai trò MEMBER:
-                
-                <div th:each="teamGroup : ${joinedTeamsWithBoards}" class="card border-0 bg-white shadow-sm mb-4">
-                    ...
-                </div>
-            -->
-
-            <!-- Placeholder UI Visual cho Khung 2 (Được gán) -->
-            <div class="card border-0 bg-white shadow-sm mb-4">
-                <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center pt-3 px-3">
-                    <div class="d-flex align-items-center gap-2">
-                        <i class="bi bi-folder-fill text-success fs-5"></i>
-                        <h6 class="fw-bold m-0 text-dark">Nhóm: Design & UX Team (Thành viên)</h6>
-                    </div>
-                    <a href="#team2" class="btn btn-sm btn-outline-secondary">
-                        <i class="bi bi-eye me-1"></i> Xem thông tin nhóm
-                    </a>
-                </div>
-                <div class="card-body">
-                    <div class="row g-3">
-                        <!-- Card Bảng được gán 1 -->
-                        <div class="col-12 col-sm-6 col-md-4 col-lg-3">
-                            <a href="#" class="board-card">
-                                <div class="board-card-banner bg-gradient-green"></div>
-                                <h6 class="board-card-title">UI Design System & Component Guidelines</h6>
-                                <div class="board-card-meta">
-                                    <span><i class="bi bi-kanban me-1"></i>Board #3</span>
-                                    <span class="badge bg-success-subtle text-success">Design Team</span>
-                                </div>
-                            </a>
-                        </div>
-                        <!-- Card Bảng được gán 2 -->
-                        <div class="col-12 col-sm-6 col-md-4 col-lg-3">
-                            <a href="#" class="board-card">
-                                <div class="board-card-banner bg-gradient-orange"></div>
-                                <h6 class="board-card-title">Marketing Landing Page Assets</h6>
-                                <div class="board-card-meta">
-                                    <span><i class="bi bi-kanban me-1"></i>Board #4</span>
-                                    <span class="badge bg-success-subtle text-success">Design Team</span>
-                                </div>
-                            </a>
-                        </div>
-                        <!-- Card Tạo bảng mới (Dành cho Thành viên tạo bảng thuộc nhóm này) -->
-                        <div class="col-12 col-sm-6 col-md-4 col-lg-3">
-                            <a href="#" class="board-card add-board-card">
-                                <i class="bi bi-plus-lg fs-4"></i>
-                                <span>Tạo bảng mới</span>
-                            </a>
-                        </div>
+                <!-- Empty State nếu chưa có nhóm -->
+                <div class="card border-0 bg-white shadow-sm py-4 text-center"
+                    th:if="${userTeamsAlphabetical == null or #lists.isEmpty(userTeamsAlphabetical)}">
+                    <div class="card-body">
+                        <i class="bi bi-people fs-2 text-muted d-block mb-2"></i>
+                        <p class="text-muted mb-3">Bạn chưa tạo hoặc tham gia nhóm nào.</p>
+                        <a th:href="@{/team/create}" class="btn btn-primary btn-sm px-3">
+                            <i class="bi bi-plus-lg me-1"></i> Tạo nhóm ngay
+                        </a>
                     </div>
                 </div>
-            </div>
 
-        </section>
+            </section>
 
-
-        <!-- ==================================================================================== -->
-        <!-- MODAL PLACEHOLDER: TẠO NHÓM MỚI (Dành cho Thành ghép logic Story #10)                 -->
-        <!-- ==================================================================================== -->
-        <div class="modal fade" id="createTeamModal" tabindex="-1" aria-labelledby="createTeamModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title fw-bold" id="createTeamModalLabel">Tạo nhóm mới</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <!-- Form cho Thành ghép th:action và th:object (Story #10) -->
-                    <form th:action="@{/team/create}" method="post">
-                        <div class="modal-body">
-                            <div class="mb-3">
-                                <label for="teamName" class="form-label">Tên nhóm <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="teamName" name="name" placeholder="Nhập tên nhóm..." required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="teamType" class="form-label">Loại nhóm <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="teamType" name="type" placeholder="VD: Kỹ thuật, Marketing, Thiết kế..." required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="teamVisibility" class="form-label">Quyền riêng tư <span class="text-danger">*</span></label>
-                                <select class="form-select" id="teamVisibility" name="visibility" required>
-                                    <option value="PRIVATE" selected>Riêng tư (Chỉ thành viên trong nhóm mới truy cập được)</option>
-                                    <option value="PUBLIC">Công khai (Bất kỳ ai có liên kết đều nhìn thấy)</option>
-                                </select>
-                            </div>
-                            <div class="mb-3">
-                                <label for="teamDescription" class="form-label">Mô tả nhóm</label>
-                                <textarea class="form-control" id="teamDescription" name="description" rows="3" placeholder="Mô tả mục đích của nhóm..."></textarea>
-                            </div>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                            <button type="submit" class="btn btn-primary">Tạo nhóm</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
         </div>
+
+        <script>
+            function toggleHomeDescription(teamId) {
+                var shortElem = document.getElementById('homeDescShort-' + teamId);
+                var fullElem = document.getElementById('homeDescFull-' + teamId);
+                var btnElem = document.getElementById('homeDescBtn-' + teamId);
+
+                if (shortElem.classList.contains('d-none')) {
+                    shortElem.classList.remove('d-none');
+                    fullElem.classList.add('d-none');
+                    btnElem.textContent = 'Xem thêm';
+                } else {
+                    shortElem.classList.add('d-none');
+                    fullElem.classList.remove('d-none');
+                    btnElem.textContent = 'Thu gọn';
+                }
+            }
+        </script>
 
     </div>
 
 </body>
+
 </html>

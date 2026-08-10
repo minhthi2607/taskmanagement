@@ -7,8 +7,10 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
 public class WebMvcConfig implements WebMvcConfigurer {
-    @Value("${app.upload-dir}")
+    @Value("${app.upload-dir:uploads/}")
     private String uploadDir;
+
+
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
