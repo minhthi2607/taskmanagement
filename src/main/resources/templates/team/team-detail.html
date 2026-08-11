@@ -97,6 +97,7 @@
             <div class="card-body p-3">
                 <div class="row g-3" th:if="${boards != null and !#lists.isEmpty(boards)}">
                     <div th:each="board : ${boards}" class="col-12 col-sm-6 col-md-4 col-lg-3">
+                        <a th:href="@{/board/{id}(id=${board.id})}" class="text-decoration-none text-dark d-block">
                         <div class="board-card">
                             <div class="board-card-banner bg-gradient-blue"></div>
                             <h6 class="board-card-title" th:text="${board.name}">Tên Bảng</h6>
@@ -105,6 +106,7 @@
                                 <span><i class="bi bi-clock me-1"></i><span th:text="${#temporals.format(board.createdAt, 'dd/MM')}">01/01</span></span>
                             </div>
                         </div>
+                        </a>
                     </div>
                 </div>
                 <div class="text-center py-4 text-muted" th:if="${boards == null or #lists.isEmpty(boards)}">
@@ -224,10 +226,12 @@
                                 <input type="email" class="form-control" id="inviteEmail" name="email" required placeholder="nhap.email@example.com">
                             </div>
                             <div class="mb-3">
-                                <label for="inviteRole" class="form-label fw-semibold">Gán Quyền <span class="text-danger">*</span></label>
-                                <select class="form-select" id="inviteRole" name="role">
-                                    <option value="MEMBER" selected>Thành viên (xem & tạo bảng)</option>
-                                    <option value="ADMIN">Quản trị nhóm (quản lý thành viên & cài đặt)</option>
+                                <label for="boardVisibility" class="form-label fw-semibold">Quyền riêng tư (Visibility) <span class="text-danger">*</span></label>
+                                <select class="form-select" id="boardVisibility" name="visibility" required>
+                                    <option value="" disabled selected>-- Chọn quyền riêng tư (Riêng tư / Nhóm / Công khai) --</option>
+                                    <option value="PRIVATE">🔒 Riêng tư (Private)</option>
+                                    <option value="GROUP">👥 Nhóm (Group)</option>
+                                    <option value="PUBLIC">🌐 Công khai (Public)</option>
                                 </select>
                             </div>
                         </div>
@@ -253,6 +257,15 @@
                             <div class="mb-3">
                                 <label for="boardName" class="form-label fw-semibold">Tên Bảng công việc <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control" id="boardName" name="name" required placeholder="Nhập tên bảng (vd: Sprint 1 Tasks)">
+                            </div>
+                            <div class="mb-3">
+                                <label for="boardVisibility" class="form-label fw-semibold">Quyền riêng tư (Visibility) <span class="text-danger">*</span></label>
+                                <select class="form-select" id="boardVisibility" name="visibility" required>
+                                    <option value="" disabled selected>-- Chọn quyền riêng tư (Riêng tư / Nhóm / Công khai) --</option>
+                                    <option value="PRIVATE">🔒 Riêng tư (Private)</option>
+                                    <option value="GROUP">👥 Nhóm (Group)</option>
+                                    <option value="PUBLIC">🌐 Công khai (Public)</option>
+                                </select>
                             </div>
                         </div>
                         <div class="modal-footer bg-light border-0">
