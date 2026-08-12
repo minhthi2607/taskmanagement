@@ -8,6 +8,7 @@ import com.project.taskmanagement.entity.User;
 import com.project.taskmanagement.enums.BoardVisibility;
 import com.project.taskmanagement.service.BoardService;
 import com.project.taskmanagement.service.BoardPermissionService;
+import com.project.taskmanagement.service.BoardMemberService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -23,6 +24,7 @@ public class BoardController {
 
     private final BoardService boardService;
     private final BoardPermissionService boardPermissionService;
+    private final BoardMemberService boardMemberService;
 
     /**
      * Story #20: Tạo mới Bảng công việc từ DTO (Task B)
@@ -84,6 +86,8 @@ public class BoardController {
             model.addAttribute("isBoardAdmin", isBoardAdmin);
             model.addAttribute("isBoardMember", isBoardMember);
             model.addAttribute("allVisibilities", BoardVisibility.values());
+            model.addAttribute("boardMembers", boardMemberService.getBoardMembers(boardId));
+            model.addAttribute("currentUser", currentUser);
 
             return "board/board-detail";
         } catch (Exception e) {

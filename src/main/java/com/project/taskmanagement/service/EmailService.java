@@ -13,4 +13,9 @@ public interface EmailService {
      * Gửi email mời tham gia nhóm (Story #16)
      */
     void sendTeamInvitationEmail(String toEmail, String teamName, String inviterName, String inviteUrl, String roleName);
+
+    /**
+     * Gửi email mời tham gia bảng (Story #23)
+     */
+    void sendBoardInvitationEmail(String toEmail, String boardName, String inviterName, String inviteUrl, String roleName);
 }

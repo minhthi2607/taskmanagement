@@ -35,7 +35,7 @@ public class SecurityConfig {
                                                 .requestMatchers("/team/create", "/team/*/edit", "/team/*/delete",
                                                                 "/team/*/members/**")
                                                 .authenticated()
-                                                .requestMatchers(HttpMethod.GET, "/team/accept-invite")
+                                                .requestMatchers(HttpMethod.GET, "/team/accept-invite", "/board/accept-invite")
                                                 .authenticated()
                                                 .requestMatchers(HttpMethod.GET, "/", "/team/list", "/team/{id}")
                                                 .permitAll()
