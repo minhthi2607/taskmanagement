@@ -29,11 +29,10 @@ public class EmailServiceImpl implements EmailService {
         String subject = "[TaskManagement] Thông báo: Nhóm '" + teamName + "' đã bị xóa";
         String body = String.format(
                 "Xin chào,\n\nNhóm làm việc '%s' trên hệ thống TaskManagement vừa bị xóa bởi quản trị viên %s.\n" +
-                "Tất cả các bảng và dữ liệu liên quan đến nhóm này sẽ không còn hiển thị.\n\n" +
-                "Trân trọng,\nĐội ngũ TaskManagement",
+                        "Tất cả các bảng và dữ liệu liên quan đến nhóm này sẽ không còn hiển thị.\n\n" +
+                        "Trân trọng,\nĐội ngũ TaskManagement",
                 teamName,
-                deleterName != null ? deleterName : "Quản trị viên"
-        );
+                deleterName != null ? deleterName : "Quản trị viên");
 
         for (String email : memberEmails) {
             boolean sent = false;
@@ -53,26 +52,27 @@ public class EmailServiceImpl implements EmailService {
 
             if (!sent) {
                 log.info("\n========================================================================\n" +
-                         "📢 [THÔNG BÁO XÓA NHÓM HỆ THỐNG]\n" +
-                         "Gửi đến thành viên: {}\n" +
-                         "Tên Nhóm đã xóa: {}\n" +
-                         "Người xóa: {}\n" +
-                         "========================================================================",
-                         email, teamName, deleterName != null ? deleterName : "Quản trị viên");
+                        "📢 [THÔNG BÁO XÓA NHÓM HỆ THỐNG]\n" +
+                        "Gửi đến thành viên: {}\n" +
+                        "Tên Nhóm đã xóa: {}\n" +
+                        "Người xóa: {}\n" +
+                        "========================================================================",
+                        email, teamName, deleterName != null ? deleterName : "Quản trị viên");
             }
         }
     }
 
     @Override
     @Async
-    public void sendTeamInvitationEmail(String toEmail, String teamName, String inviterName, String inviteUrl, String roleName) {
+    public void sendTeamInvitationEmail(String toEmail, String teamName, String inviterName, String inviteUrl,
+            String roleName) {
         String subject = "[TaskManagement] Lời mời tham gia nhóm '" + teamName + "'";
         String body = String.format(
-                "Xin chào,\n\nBạn vừa nhận được lời mời tham gia nhóm '%s' trên TaskManagement với vai trò '%s' từ %s.\n\n" +
-                "Vui lòng truy cập đường dẫn sau để chấp nhận lời mời:\n%s\n\n" +
-                "Trân trọng,\nĐội ngũ TaskManagement",
-                teamName, roleName, inviterName, inviteUrl
-        );
+                "Xin chào,\n\nBạn vừa nhận được lời mời tham gia nhóm '%s' trên TaskManagement với vai trò '%s' từ %s.\n\n"
+                        +
+                        "Vui lòng truy cập đường dẫn sau để chấp nhận lời mời:\n%s\n\n" +
+                        "Trân trọng,\nĐội ngũ TaskManagement",
+                teamName, roleName, inviterName, inviteUrl);
 
         boolean sent = false;
         try {
@@ -91,25 +91,26 @@ public class EmailServiceImpl implements EmailService {
 
         if (!sent) {
             log.info("\n========================================================================\n" +
-                     "📩 [THÔNG BÁO LỜI MỜI THAM GIA NHÓM]\n" +
-                     "Đến: {}\n" +
-                     "Nhóm: {}\n" +
-                     "👉 Link chấp nhận lời mời: {}\n" +
-                     "========================================================================",
-                     toEmail, teamName, inviteUrl);
+                    "📩 [THÔNG BÁO LỜI MỜI THAM GIA NHÓM]\n" +
+                    "Đến: {}\n" +
+                    "Nhóm: {}\n" +
+                    "👉 Link chấp nhận lời mời: {}\n" +
+                    "========================================================================",
+                    toEmail, teamName, inviteUrl);
         }
     }
 
     @Override
     @Async
-    public void sendBoardInvitationEmail(String toEmail, String boardName, String inviterName, String inviteUrl, String roleName) {
+    public void sendBoardInvitationEmail(String toEmail, String boardName, String inviterName, String inviteUrl,
+            String roleName) {
         String subject = "[TaskManagement] Lời mời tham gia bảng '" + boardName + "'";
         String body = String.format(
-                "Xin chào,\n\nBạn vừa nhận được lời mời tham gia bảng công việc '%s' trên TaskManagement với vai trò '%s' từ %s.\n\n" +
-                "Vui lòng truy cập đường dẫn sau để chấp nhận lời mời:\n%s\n\n" +
-                "Trân trọng,\nĐội ngũ TaskManagement",
-                boardName, roleName, inviterName, inviteUrl
-        );
+                "Xin chào,\n\nBạn vừa nhận được lời mời tham gia bảng công việc '%s' trên TaskManagement với vai trò '%s' từ %s.\n\n"
+                        +
+                        "Vui lòng truy cập đường dẫn sau để chấp nhận lời mời:\n%s\n\n" +
+                        "Trân trọng,\nĐội ngũ TaskManagement",
+                boardName, roleName, inviterName, inviteUrl);
 
         boolean sent = false;
         try {
@@ -128,12 +129,12 @@ public class EmailServiceImpl implements EmailService {
 
         if (!sent) {
             log.info("\n========================================================================\n" +
-                     "📩 [THÔNG BÁO LỜI MỜI THAM GIA BẢNG]\n" +
-                     "Đến: {}\n" +
-                     "Bảng: {}\n" +
-                     "👉 Link chấp nhận lời mời: {}\n" +
-                     "========================================================================",
-                     toEmail, boardName, inviteUrl);
+                    "📩 [THÔNG BÁO LỜI MỜI THAM GIA BẢNG]\n" +
+                    "Đến: {}\n" +
+                    "Bảng: {}\n" +
+                    "👉 Link chấp nhận lời mời: {}\n" +
+                    "========================================================================",
+                    toEmail, boardName, inviteUrl);
         }
     }
 }

@@ -61,29 +61,118 @@
                     </div>
                 </div>
 
-                <!-- Action Buttons (Dành riêng cho ADMIN bảng) -->
-                <div class="d-flex align-items-center gap-2" th:if="${isBoardAdmin}">
-                    <!-- Story #21: Đổi tên Board -->
-                    <button type="button" data-bs-toggle="modal" data-bs-target="#renameBoardModal"
-                            class="btn btn-outline-secondary btn-sm rounded-pill px-3 d-flex align-items-center gap-1">
-                        <i class="bi bi-pencil-square me-1"></i>
-                        <span>Đổi tên</span>
-                    </button>
+                <!-- Action Buttons -->
+                <div class="d-flex align-items-center gap-2">
+                    
+                    <!-- Nút tham gia bảng (Cho người chưa là thành viên, Story #25) -->
+                    <form th:if="${!isBoardMember}" th:action="@{/board/{id}/join(id=${board.id})}" method="post" class="m-0">
+                        <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 d-flex align-items-center gap-1 shadow-sm">
+                            <i class="bi bi-person-plus-fill me-1"></i>
+                            <span>Tham gia bảng</span>
+                        </button>
+                    </form>
 
-                    <!-- Story #22: Đổi Visibility -->
-                    <button type="button" data-bs-toggle="modal" data-bs-target="#changeVisibilityModal"
-                            class="btn btn-outline-primary btn-sm rounded-pill px-3 d-flex align-items-center gap-1">
-                        <i class="bi bi-eye-fill me-1"></i>
-                        <span>Quyền riêng tư</span>
-                    </button>
+                    <!-- Dành riêng cho ADMIN bảng -->
+                    <th:block th:if="${isBoardAdmin}">
+                        <!-- Story #23: Mời thành viên -->
+                        <button type="button" data-bs-toggle="modal" data-bs-target="#inviteMemberModal"
+                                class="btn btn-outline-success btn-sm rounded-pill px-3 d-flex align-items-center gap-1">
+                            <i class="bi bi-person-plus me-1"></i>
+                            <span>Mời thành viên</span>
+                        </button>
 
-                    <!-- Story #27: Xóa Board -->
-                    <button type="button" data-bs-toggle="modal" data-bs-target="#deleteBoardModal"
-                            class="btn btn-outline-danger btn-sm rounded-pill px-3 d-flex align-items-center gap-1">
-                        <i class="bi bi-trash-fill me-1"></i>
-                        <span>Xóa bảng</span>
-                    </button>
+                        <!-- Story #21: Đổi tên Board -->
+                        <button type="button" data-bs-toggle="modal" data-bs-target="#renameBoardModal"
+                                class="btn btn-outline-secondary btn-sm rounded-pill px-3 d-flex align-items-center gap-1">
+                            <i class="bi bi-pencil-square me-1"></i>
+                            <span>Đổi tên</span>
+                        </button>
+
+                        <!-- Story #22: Đổi Visibility -->
+                        <button type="button" data-bs-toggle="modal" data-bs-target="#changeVisibilityModal"
+                                class="btn btn-outline-primary btn-sm rounded-pill px-3 d-flex align-items-center gap-1">
+                            <i class="bi bi-eye-fill me-1"></i>
+                            <span>Quyền riêng tư</span>
+                        </button>
+
+                        <!-- Story #27: Xóa Board -->
+                        <button type="button" data-bs-toggle="modal" data-bs-target="#deleteBoardModal"
+                                class="btn btn-outline-danger btn-sm rounded-pill px-3 d-flex align-items-center gap-1">
+                            <i class="bi bi-trash-fill me-1"></i>
+                            <span>Xóa bảng</span>
+                        </button>
+                    </th:block>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Members Section -->
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-transparent border-0 pt-4 pb-0 px-4">
+            <h5 class="fw-bold mb-0"><i class="bi bi-people-fill me-2 text-primary"></i>Thành viên bảng</h5>
+        </div>
+        <div class="card-body p-4">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                    <tr>
+                        <th class="ps-3">Tên thành viên</th>
+                        <th>Email</th>
+                        <th>Vai trò</th>
+                        <th th:if="${isBoardAdmin}" class="text-end pe-3">Thao tác</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="member : ${boardMembers}">
+                        <td class="ps-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <img th:if="${member.user.avatarUrl != null}" th:src="${member.user.avatarUrl}" alt="Avatar" class="rounded-circle object-fit-cover" width="36" height="36">
+                                <div th:unless="${member.user.avatarUrl != null}" class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                                    <i class="bi bi-person fs-5"></i>
+                                </div>
+                                <div>
+                                    <span class="fw-semibold text-dark d-block" th:text="${member.user.displayName}">Tên người dùng</span>
+                                    <span th:if="${member.user.id == currentUser.id}" class="badge bg-primary-subtle text-primary mt-1" style="font-size: 0.7rem;">Bạn</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="text-secondary" th:text="${member.user.email}">email@example.com</td>
+                        <td>
+                            <span th:if="${!isBoardAdmin or member.user.id == currentUser.id}" 
+                                  class="badge px-2 py-1" 
+                                  th:classappend="${member.role.name() == 'ADMIN'} ? 'bg-danger-subtle text-danger' : 'bg-info-subtle text-info'" 
+                                  th:text="${member.role.name() == 'ADMIN'} ? 'Quản trị viên' : 'Thành viên'">Vai trò</span>
+                                  
+                            <form th:if="${isBoardAdmin and member.user.id != currentUser.id}" 
+                                  th:action="@{/board/{boardId}/members/{userId}/role(boardId=${board.id}, userId=${member.user.id})}" 
+                                  method="post" class="m-0">
+                                <select name="role" class="form-select form-select-sm w-auto shadow-none" onchange="this.form.submit()">
+                                    <option value="ADMIN" th:selected="${member.role.name() == 'ADMIN'}">Quản trị viên</option>
+                                    <option value="MEMBER" th:selected="${member.role.name() == 'MEMBER'}">Thành viên</option>
+                                </select>
+                            </form>
+                        </td>
+                        <td th:if="${isBoardAdmin}" class="text-end pe-3">
+                            <button th:if="${member.user.id != currentUser.id}" 
+                                    type="button" 
+                                    class="btn btn-outline-danger btn-sm rounded-circle p-1 lh-1 d-inline-flex justify-content-center align-items-center" 
+                                    style="width: 28px; height: 28px;"
+                                    data-bs-toggle="modal" 
+                                    th:data-bs-target="'#removeMemberModal-' + ${member.user.id}" 
+                                    title="Loại bỏ thành viên">
+                                <i class="bi bi-x fs-5"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(boardMembers)}">
+                        <td colspan="4" class="text-center text-muted py-4">
+                            <i class="bi bi-person-x fs-2 d-block mb-2 opacity-50"></i>
+                            Chưa có thành viên nào trong bảng này.
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
@@ -98,8 +187,64 @@
     </div>
 
     <!-- ========================================== -->
-    <!-- MODALS (#21, #22, #27)                     -->
+    <!-- MODALS (#21, #22, #27, #23, #24)           -->
     <!-- ========================================== -->
+
+    <!-- Modal Story #23: Mời thành viên -->
+    <div class="modal fade" id="inviteMemberModal" tabindex="-1" aria-labelledby="inviteMemberModalLabel" aria-hidden="true" th:if="${isBoardAdmin}">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title fw-bold fs-6" id="inviteMemberModalLabel"><i class="bi bi-person-plus-fill me-2"></i>Mời thành viên vào bảng</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form th:action="@{/board/{id}/members/invite(id=${board.id})}" method="post">
+                    <div class="modal-body p-4">
+                        <div class="mb-3">
+                            <label for="inviteEmail" class="form-label fw-semibold">Địa chỉ Email <span class="text-danger">*</span></label>
+                            <input type="email" class="form-control" id="inviteEmail" name="email" required placeholder="nhap-email@domain.com">
+                        </div>
+                        <div class="mb-3">
+                            <label for="inviteRole" class="form-label fw-semibold">Quyền hạn <span class="text-danger">*</span></label>
+                            <select class="form-select" id="inviteRole" name="role">
+                                <option value="MEMBER" selected>Thành viên</option>
+                                <option value="ADMIN">Quản trị viên</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer bg-light border-0">
+                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn btn-success btn-sm px-4">Gửi lời mời</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Story #24: Loại bỏ thành viên -->
+    <th:block th:if="${isBoardAdmin}">
+        <div th:each="member : ${boardMembers}" th:if="${member.user.id != currentUser.id}">
+            <div class="modal fade" th:id="'removeMemberModal-' + ${member.user.id}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content border-0 shadow">
+                        <div class="modal-header bg-danger text-white">
+                            <h5 class="modal-title fw-bold fs-6"><i class="bi bi-person-x-fill me-2"></i>Xác nhận loại bỏ thành viên</h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body p-4">
+                            <p class="mb-0">Bạn có chắc chắn muốn loại bỏ <strong><span th:text="${member.user.displayName}">Tên</span></strong> (<span th:text="${member.user.email}">email</span>) khỏi bảng này không?</p>
+                        </div>
+                        <div class="modal-footer bg-light border-0">
+                            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Hủy</button>
+                            <form th:action="@{/board/{boardId}/members/{userId}/remove(boardId=${board.id}, userId=${member.user.id})}" method="post" class="d-inline">
+                                <button type="submit" class="btn btn-danger btn-sm px-3">Loại bỏ</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </th:block>
 
     <!-- Modal Story #21: Đổi tên Board -->
     <div class="modal fade" id="renameBoardModal" tabindex="-1" aria-labelledby="renameBoardModalLabel" aria-hidden="true" th:if="${isBoardAdmin}">
