@@ -10,9 +10,5 @@ import java.util.Optional;
 @Repository
 public interface BoardMemberRepository extends JpaRepository<BoardMember, Long> {
 
-    List<BoardMember> findByBoardId(Long boardId);
-
-    Optional<BoardMember> findByBoardIdAndUserId(Long boardId, Long userId);
-
     boolean existsByBoardIdAndUserId(Long boardId, Long userId);
 }
