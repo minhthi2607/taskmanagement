@@ -226,14 +226,12 @@
                                 <input type="email" class="form-control" id="inviteEmail" name="email" required placeholder="nhap.email@example.com">
                             </div>
                             <div class="mb-3">
-                                <label for="boardVisibility" class="form-label fw-semibold">Quyền riêng tư (Visibility) <span class="text-danger">*</span></label>
-                                <select class="form-select" id="boardVisibility" name="visibility" required>
-                                    <option value="" disabled selected>-- Chọn quyền riêng tư (Riêng tư / Nhóm / Công khai) --</option>
-                                    <option value="PRIVATE">🔒 Riêng tư (Private)</option>
-                                    <option value="GROUP">👥 Nhóm (Group)</option>
-                                    <option value="PUBLIC">🌐 Công khai (Public)</option>
-                                </select>
-                            </div>
+                            <label for="inviteRole" class="form-label fw-semibold">Gán Quyền <span class="text-danger">*</span></label>
+                            <select class="form-select" id="inviteRole" name="role">
+                                <option value="MEMBER" selected>Thành viên (xem & tạo bảng)</option>
+                                <option value="ADMIN">Quản trị nhóm (quản lý thành viên & cài đặt)</option>
+                            </select>
+                        </div>
                         </div>
                         <div class="modal-footer bg-light border-0">
                             <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Hủy</button>
@@ -252,7 +250,8 @@
                         <h5 class="modal-title fw-bold fs-6" id="createBoardModalLabel"><i class="bi bi-kanban me-2"></i>Tạo Bảng công việc mới</h5>
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
-                    <form th:action="@{/team/{teamId}/boards/create(teamId=${team.id})}" method="post">
+                    <form th:action="@{/board/create}" method="post">
+                        <input type="hidden" name="teamId" th:value="${team.id}">
                         <div class="modal-body p-4">
                             <div class="mb-3">
                                 <label for="boardName" class="form-label fw-semibold">Tên Bảng công việc <span class="text-danger">*</span></label>

@@ -34,37 +34,7 @@ public class BoardServiceImpl implements BoardService {
     private final BoardMemberRepository boardMemberRepository;
     private final BoardPermissionService boardPermissionService;
 
-    @Override
-    @Transactional
-    public Board createBoard(Long teamId, String name, User currentUser) {
-        if (currentUser == null) {
-            throw new SecurityException("Bạn cần đăng nhập để tạo bảng công việc!");
-        }
 
-        Team team = teamRepository.findById(teamId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy nhóm với ID: " + teamId));
-
-        // Kiểm tra xem người dùng có phải thành viên hoặc admin của nhóm không
-        if (!teamService.isUserMemberOfTeam(teamId, currentUser.getId())) {
-            throw new SecurityException(
-                    "Chỉ thành viên hoặc Quản trị nhóm mới có quyền tạo bảng công việc trong nhóm này!");
-        }
-
-        String boardName = name != null ? name.trim() : "";
-        if (boardName.isBlank()) {
-            throw new IllegalArgumentException("Tên bảng công việc không được để trống!");
-        }
-
-        Board board = Board.builder()
-                .teamId(teamId)
-                .name(boardName)
-                .visibility(BoardVisibility.GROUP)
-                .createdBy(currentUser.getId())
-                .createdAt(LocalDateTime.now())
-                .build();
-
-        return boardRepository.save(board);
-    }
 
     @Override
     @Transactional(readOnly = true)

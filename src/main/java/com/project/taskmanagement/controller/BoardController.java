@@ -25,30 +25,6 @@ public class BoardController {
     private final BoardPermissionService boardPermissionService;
 
     /**
-     * Story #19: Tạo mới Bảng công việc trong Nhóm
-     */
-    @PostMapping("/team/{teamId}/boards/create")
-    public String createBoard(
-            @PathVariable("teamId") Long teamId,
-            @RequestParam("name") String name,
-            @AuthenticationPrincipal UserPrincipal principal,
-            RedirectAttributes redirectAttributes
-    ) {
-        if (principal == null || principal.getUser() == null) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Bạn cần đăng nhập để tạo bảng công việc!");
-            return "redirect:/auth/login";
-        }
-
-        try {
-            Board createdBoard = boardService.createBoard(teamId, name, principal.getUser());
-            redirectAttributes.addFlashAttribute("successMessage", "Tạo bảng công việc '" + createdBoard.getName() + "' thành công!");
-        } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
-        }
-
-        return "redirect:/team/" + teamId;
-    }
-    /**
      * Story #20: Tạo mới Bảng công việc từ DTO (Task B)
      */
     @PostMapping("/board/create")

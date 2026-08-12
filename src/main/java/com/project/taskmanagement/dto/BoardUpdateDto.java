@@ -19,20 +19,4 @@ public class BoardUpdateDto {
 
     @NotNull(message = "Quyền truy cập bảng không được để trống!")
     private BoardVisibility visibility;
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public BoardVisibility getVisibility() {
-        return visibility;
-    }
-
-    public void setVisibility(BoardVisibility visibility) {
-        this.visibility = visibility;
-    }
 }
