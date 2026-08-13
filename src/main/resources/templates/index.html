@@ -89,32 +89,175 @@
         </div>
 
         <!-- ==================================================================================== -->
-        <!-- TRƯỜNG HỢP 2: NGƯỜI DÙNG ĐÃ ĐÃNG NHẬP (Hiển thị Data & Thao tác tương tác)           -->
+        <!-- TRƯỜNG HỢP 2: NGƯỜI DÙNG ĐÃ ĐĂNG NHẬP (Hiển thị Data & Thao tác tương tác)           -->
         <!-- ==================================================================================== -->
         <div sec:authorize="isAuthenticated()">
             <!-- Header phần Body -->
-            <div class="d-flex align-items-center justify-content-between mb-3">
+            <div class="d-flex align-items-center justify-content-between mb-4">
                 <div>
                     <h3 class="fw-bold mb-1 fs-4">Không gian làm việc</h3>
                     <p class="text-muted mb-0 small">Quản lý các bảng công việc và nhóm làm việc của bạn</p>
                 </div>
                 <!-- Nút Tạo nhóm nhanh (Story #10) -->
-                <a th:href="@{/team/create}" class="btn btn-primary btn-sm d-flex align-items-center gap-2 px-3 shadow-sm">
-                    <i class="bi bi-plus-lg"></i>
-                    <span>Tạo nhóm mới</span>
-                </a>
+                <div class="d-flex gap-2">
+                    <a th:href="@{/team/create}" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-2 px-3 shadow-sm rounded-pill">
+                        <i class="bi bi-people-fill"></i>
+                        <span>Tạo nhóm mới</span>
+                    </a>
+                </div>
             </div>
 
-            <!-- KHUNG 1: DANH SÁCH BẢNG TỰ TẠO (PHÂN LOẠI THEO NHÓM) - Story #1 -->
+            <!-- ==================================================================================== -->
+            <!-- KHUNG 1 (STORY #4): BẢNG DO USER TỰ TẠO (Group theo Nhóm, Sắp xếp Alphabet)          -->
+            <!-- ==================================================================================== -->
+            <section class="mb-5">
+                <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-kanban-fill text-primary fs-5"></i>
+                        <h5 class="fw-bold m-0 fs-5">Bảng công việc do bạn tạo</h5>
+                        <span class="badge bg-primary-subtle text-primary rounded-pill px-2.5">Quản trị viên</span>
+                    </div>
+                </div>
+
+                <!-- Danh sách nhóm & Bảng tự tạo (Story #4) -->
+                <div th:if="${createdTeamBoards != null and !#lists.isEmpty(createdTeamBoards)}">
+                    <div th:each="group : ${createdTeamBoards}" class="mb-4">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <i class="bi bi-folder-fill text-secondary"></i>
+                            <h6 class="fw-bold m-0 fs-6 text-dark" th:text="${group.team.name}">Tên Nhóm</h6>
+                            <span class="badge-team-type" th:text="${group.team.type}">Loại nhóm</span>
+                        </div>
+                        
+                        <div class="row g-3">
+                            <div th:each="board : ${group.boards}" class="col-12 col-md-6 col-lg-4">
+                                <div class="modern-team-card h-100 p-3" th:classappend="${board.visibility.name() == 'PRIVATE'} ? 'card-private' : (${board.visibility.name() == 'PUBLIC'} ? 'card-public' : '')">
+                                    <div class="card-body d-flex flex-column justify-content-between p-2">
+                                        <div>
+                                            <div class="d-flex align-items-center justify-content-between mb-3 gap-2 overflow-hidden">
+                                                <span class="badge-team-type" th:text="${group.team.name}">Tên nhóm</span>
+                                                <span th:if="${board.visibility.name() == 'PUBLIC'}" class="badge-visibility-public">
+                                                    <i class="bi bi-globe me-1"></i>Công khai
+                                                </span>
+                                                <span th:if="${board.visibility.name() == 'GROUP'}" class="badge-visibility-group">
+                                                    <i class="bi bi-people-fill me-1"></i>Nhóm
+                                                </span>
+                                                <span th:if="${board.visibility.name() == 'PRIVATE'}" class="badge-visibility-private">
+                                                    <i class="bi bi-lock-fill me-1"></i>Riêng tư
+                                                </span>
+                                            </div>
+                                            <h5 class="card-title fw-bold mb-2 fs-5">
+                                                <a th:href="@{/board/{id}(id=${board.id})}" class="text-decoration-none text-dark hover-primary" th:text="${board.name}">Tên bảng</a>
+                                            </h5>
+                                            <p class="text-muted small mb-3">
+                                                <i class="bi bi-clock me-1"></i>Ngày tạo: <span th:text="${#temporals.format(board.createdAt, 'dd/MM/yyyy')}">01/01/2026</span>
+                                            </p>
+                                        </div>
+                                        <div class="pt-3 border-top d-flex align-items-center justify-content-between mt-2">
+                                            <span class="text-muted small fw-medium">
+                                                <i class="bi bi-kanban me-1 text-primary"></i>Bảng tự tạo
+                                            </span>
+                                            <a th:href="@{/board/{id}(id=${board.id})}" class="btn-access-action">
+                                                <span>Vào bảng</span> <i class="bi bi-arrow-right ms-1"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Empty state cho Bảng tự tạo -->
+                <div class="card border-0 bg-white shadow-sm py-4 text-center rounded-3"
+                    th:if="${createdTeamBoards == null or #lists.isEmpty(createdTeamBoards)}">
+                    <div class="card-body">
+                        <i class="bi bi-kanban fs-2 text-muted d-block mb-2"></i>
+                        <p class="text-muted mb-0 small">Bạn chưa tạo bảng công việc nào.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==================================================================================== -->
+            <!-- KHUNG 2 (STORY #5): BẢNG USER ĐƯỢC GÁN LÀM THÀNH VIÊN (Group theo Nhóm, Sắp xếp A-Z) -->
+            <!-- ==================================================================================== -->
+            <section class="mb-5">
+                <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-people text-info fs-5"></i>
+                        <h5 class="fw-bold m-0 fs-5">Bảng công việc bạn tham gia</h5>
+                        <span class="badge bg-info-subtle text-info rounded-pill px-2.5">Thành viên</span>
+                    </div>
+                </div>
+
+                <!-- Danh sách nhóm & Bảng tham gia (Story #5) -->
+                <div th:if="${joinedTeamBoards != null and !#lists.isEmpty(joinedTeamBoards)}">
+                    <div th:each="group : ${joinedTeamBoards}" class="mb-4">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <i class="bi bi-folder-fill text-secondary"></i>
+                            <h6 class="fw-bold m-0 fs-6 text-dark" th:text="${group.team.name}">Tên Nhóm</h6>
+                            <span class="badge-team-type" th:text="${group.team.type}">Loại nhóm</span>
+                        </div>
+                        
+                        <div class="row g-3">
+                            <div th:each="board : ${group.boards}" class="col-12 col-md-6 col-lg-4">
+                                <div class="modern-team-card h-100 p-3" th:classappend="${board.visibility.name() == 'PRIVATE'} ? 'card-private' : (${board.visibility.name() == 'PUBLIC'} ? 'card-public' : '')">
+                                    <div class="card-body d-flex flex-column justify-content-between p-2">
+                                        <div>
+                                            <div class="d-flex align-items-center justify-content-between mb-3 gap-2 overflow-hidden">
+                                                <span class="badge-team-type" th:text="${group.team.name}">Tên nhóm</span>
+                                                <span th:if="${board.visibility.name() == 'PUBLIC'}" class="badge-visibility-public">
+                                                    <i class="bi bi-globe me-1"></i>Công khai
+                                                </span>
+                                                <span th:if="${board.visibility.name() == 'GROUP'}" class="badge-visibility-group">
+                                                    <i class="bi bi-people-fill me-1"></i>Nhóm
+                                                </span>
+                                                <span th:if="${board.visibility.name() == 'PRIVATE'}" class="badge-visibility-private">
+                                                    <i class="bi bi-lock-fill me-1"></i>Riêng tư
+                                                </span>
+                                            </div>
+                                            <h5 class="card-title fw-bold mb-2 fs-5">
+                                                <a th:href="@{/board/{id}(id=${board.id})}" class="text-decoration-none text-dark hover-primary" th:text="${board.name}">Tên bảng</a>
+                                            </h5>
+                                            <p class="text-muted small mb-3">
+                                                <i class="bi bi-clock me-1"></i>Ngày tạo: <span th:text="${#temporals.format(board.createdAt, 'dd/MM/yyyy')}">01/01/2026</span>
+                                            </p>
+                                        </div>
+                                        <div class="pt-3 border-top d-flex align-items-center justify-content-between mt-2">
+                                            <span class="text-muted small fw-medium">
+                                                <i class="bi bi-person-check me-1 text-info"></i>Đã tham gia
+                                            </span>
+                                            <a th:href="@{/board/{id}(id=${board.id})}" class="btn-access-action">
+                                                <span>Vào bảng</span> <i class="bi bi-arrow-right ms-1"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Empty state cho Bảng tham gia -->
+                <div class="card border-0 bg-white shadow-sm py-4 text-center rounded-3"
+                    th:if="${joinedTeamBoards == null or #lists.isEmpty(joinedTeamBoards)}">
+                    <div class="card-body">
+                        <i class="bi bi-people fs-2 text-muted d-block mb-2"></i>
+                        <p class="text-muted mb-0 small">Bạn chưa được gán tham gia bảng nào khác.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==================================================================================== -->
+            <!-- KHUNG 3: DANH SÁCH NHÓM CỦA BẠN (Sắp xếp Alphabet A-Z)                                -->
+            <!-- ==================================================================================== -->
             <section class="mb-4">
-                <div class="d-flex align-items-center justify-content-between mb-3">
+                <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
                     <div class="d-flex align-items-center gap-2">
                         <i class="bi bi-person-workspace text-primary fs-5"></i>
                         <h5 class="fw-bold m-0 fs-5">Danh sách nhóm của bạn</h5>
-                        <span class="badge bg-primary-subtle text-primary rounded-pill">Quản trị / Thành viên</span>
+                        <span class="badge bg-primary-subtle text-primary rounded-pill px-2.5">Tất cả nhóm</span>
                     </div>
-                    <a th:href="@{/team/list}" class="btn btn-sm btn-link text-decoration-none">Xem tất cả nhóm <i
-                            class="bi bi-arrow-right"></i></a>
+                    <a th:href="@{/team/list}" class="btn btn-sm btn-link text-decoration-none">Xem tất cả nhóm <i class="bi bi-arrow-right"></i></a>
                 </div>
 
                 <!-- Danh sách nhóm động thực tế -->
@@ -167,7 +310,7 @@
                 </div>
 
                 <!-- Empty State nếu chưa có nhóm -->
-                <div class="card border-0 bg-white shadow-sm py-4 text-center"
+                <div class="card border-0 bg-white shadow-sm py-4 text-center rounded-3"
                     th:if="${userTeamsAlphabetical == null or #lists.isEmpty(userTeamsAlphabetical)}">
                     <div class="card-body">
                         <i class="bi bi-people fs-2 text-muted d-block mb-2"></i>
