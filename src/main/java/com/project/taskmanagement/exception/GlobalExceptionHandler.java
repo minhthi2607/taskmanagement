@@ -57,6 +57,40 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Xử lý các lỗi vi phạm ràng buộc dữ liệu CSDL (DataIntegrityViolationException - ví dụ: trùng lặp dữ liệu unique)
+     */
+    @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+    public String handleDataIntegrityViolationException(org.springframework.dao.DataIntegrityViolationException ex, RedirectAttributes redirectAttributes, HttpServletRequest request) {
+        log.warn("DataIntegrityViolationException at {}: {}", request.getRequestURI(), ex.getMessage());
+        redirectAttributes.addFlashAttribute("errorMessage", "Dữ liệu không hợp lệ hoặc đã tồn tại trong hệ thống (vi phạm ràng buộc dữ liệu)!");
+        String referer = request.getHeader("Referer");
+        return (referer != null && !referer.isBlank()) ? "redirect:" + referer : "redirect:/";
+    }
+
+    /**
+     * Xử lý lỗi validate form dữ liệu đầu vào (BindException / MethodArgumentNotValidException)
+     */
+    @ExceptionHandler(org.springframework.validation.BindException.class)
+    public String handleBindException(org.springframework.validation.BindException ex, RedirectAttributes redirectAttributes, HttpServletRequest request) {
+        log.warn("BindException at {}: {}", request.getRequestURI(), ex.getMessage());
+        String errorMsg = ex.getBindingResult().getAllErrors().get(0).getDefaultMessage();
+        redirectAttributes.addFlashAttribute("errorMessage", errorMsg != null ? errorMsg : "Dữ liệu nhập vào không hợp lệ!");
+        String referer = request.getHeader("Referer");
+        return (referer != null && !referer.isBlank()) ? "redirect:" + referer : "redirect:/";
+    }
+
+    /**
+     * Xử lý ngoại lệ trạng thái ứng dụng không hợp lệ (IllegalStateException)
+     */
+    @ExceptionHandler(IllegalStateException.class)
+    public String handleIllegalStateException(IllegalStateException ex, RedirectAttributes redirectAttributes, HttpServletRequest request) {
+        log.warn("IllegalStateException at {}: {}", request.getRequestURI(), ex.getMessage());
+        redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage() != null ? ex.getMessage() : "Thao tác không thể thực hiện ở trạng thái hiện tại!");
+        String referer = request.getHeader("Referer");
+        return (referer != null && !referer.isBlank()) ? "redirect:" + referer : "redirect:/";
+    }
+
+    /**
      * Xử lý tĩnh cho các tài nguyên không tồn tại (ví dụ: /favicon.ico hoặc tệp tĩnh thiếu)
      */
     @ExceptionHandler(org.springframework.web.servlet.resource.NoResourceFoundException.class)

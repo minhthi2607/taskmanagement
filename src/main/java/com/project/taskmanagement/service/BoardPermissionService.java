@@ -25,4 +25,15 @@ public interface BoardPermissionService {
      * Throw AccessDeniedException nếu không có quyền xem.
      */
     void checkViewPermission(Long boardId, User user);
+
+    /**
+     * Kiểm tra xem user có quyền SỬA Board (tạo/sửa/xóa TaskList, Card...).
+     * Theo quy tắc mục 7.2: Phải là BoardMember của bảng.
+     */
+    void checkEditPermission(Long boardId, User user);
+
+    /**
+     * Trả về true nếu user có quyền SỬA Board (đã là BoardMember).
+     */
+    boolean canEditBoard(Long boardId, Long userId);
 }

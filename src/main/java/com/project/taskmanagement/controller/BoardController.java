@@ -6,6 +6,8 @@ import com.project.taskmanagement.dto.BoardUpdateDto;
 import com.project.taskmanagement.entity.Board;
 import com.project.taskmanagement.entity.User;
 import com.project.taskmanagement.enums.BoardVisibility;
+import com.project.taskmanagement.dto.TaskListCreateDto;
+import com.project.taskmanagement.service.TaskListService;
 import com.project.taskmanagement.service.BoardService;
 import com.project.taskmanagement.service.BoardPermissionService;
 import com.project.taskmanagement.service.BoardMemberService;
@@ -25,6 +27,7 @@ public class BoardController {
     private final BoardService boardService;
     private final BoardPermissionService boardPermissionService;
     private final BoardMemberService boardMemberService;
+    private final TaskListService taskListService;
 
     /**
      * Story #20: Tạo mới Bảng công việc từ DTO (Task B)
@@ -74,6 +77,7 @@ public class BoardController {
 
             boolean isBoardAdmin = boardPermissionService.isBoardAdmin(boardId, userId);
             boolean isBoardMember = boardPermissionService.isBoardMember(boardId, userId);
+            boolean canEditBoard = boardPermissionService.canEditBoard(boardId, userId);
 
             if (!model.containsAttribute("boardUpdateDto")) {
                 model.addAttribute("boardUpdateDto", BoardUpdateDto.builder()
@@ -82,9 +86,17 @@ public class BoardController {
                         .build());
             }
 
+            if (!model.containsAttribute("taskListCreateDto")) {
+                model.addAttribute("taskListCreateDto", TaskListCreateDto.builder()
+                        .boardId(boardId)
+                        .build());
+            }
+
             model.addAttribute("board", board);
             model.addAttribute("isBoardAdmin", isBoardAdmin);
             model.addAttribute("isBoardMember", isBoardMember);
+            model.addAttribute("canEditBoard", canEditBoard);
+            model.addAttribute("taskLists", taskListService.getTaskListsByBoardId(boardId));
             model.addAttribute("allVisibilities", BoardVisibility.values());
             model.addAttribute("boardMembers", boardMemberService.getBoardMembers(boardId));
             model.addAttribute("currentUser", currentUser);

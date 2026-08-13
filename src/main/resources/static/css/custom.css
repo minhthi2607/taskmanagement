@@ -208,6 +208,141 @@ body {
     font-size: 0.9rem;
 }
 
+/* ========================================== */
+/* RICH AESTHETICS - VISIBILITY BADGES & CARDS */
+/* ========================================== */
+
+/* Visibility Badges */
+.badge-visibility-private {
+    background: linear-gradient(135deg, #f43f5e, #be123c) !important;
+    color: #ffffff !important;
+    padding: 0.35rem 0.75rem !important;
+    font-weight: 600 !important;
+    border-radius: 50rem !important;
+    box-shadow: 0 3px 10px rgba(225, 29, 72, 0.3) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.25rem !important;
+    font-size: 0.75rem !important;
+    letter-spacing: 0.02em;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+}
+
+.badge-visibility-public {
+    background: linear-gradient(135deg, #10b981, #047857) !important;
+    color: #ffffff !important;
+    padding: 0.35rem 0.75rem !important;
+    font-weight: 600 !important;
+    border-radius: 50rem !important;
+    box-shadow: 0 3px 10px rgba(16, 185, 129, 0.3) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.25rem !important;
+    font-size: 0.75rem !important;
+    letter-spacing: 0.02em;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+}
+
+.badge-visibility-group {
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8) !important;
+    color: #ffffff !important;
+    padding: 0.35rem 0.75rem !important;
+    font-weight: 600 !important;
+    border-radius: 50rem !important;
+    box-shadow: 0 3px 10px rgba(59, 130, 246, 0.3) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.25rem !important;
+    font-size: 0.75rem !important;
+    letter-spacing: 0.02em;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+}
+
+.badge-team-type {
+    background-color: #f1f5f9;
+    color: #334155;
+    border: 1px solid #cbd5e1;
+    font-weight: 600;
+    padding: 0.3rem 0.65rem;
+    border-radius: 50rem;
+    font-size: 0.75rem;
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: inline-block;
+    flex-shrink: 1;
+}
+
+/* Global Text Overflow & Break Protection */
+.card-title, .card-text, .desc-text, h1, h2, h3, h4, h5, h6, p, span, a, td, th {
+    word-break: break-word;
+    overflow-wrap: anywhere;
+}
+
+/* Modern Card Component */
+.modern-team-card {
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 0.85rem !important;
+    background: #ffffff !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03) !important;
+    transition: transform 0.25s cubic-bezier(0.165, 0.84, 0.44, 1), box-shadow 0.25s cubic-bezier(0.165, 0.84, 0.44, 1) !important;
+    overflow: hidden;
+    position: relative;
+}
+
+.modern-team-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #3b82f6, #6366f1);
+    opacity: 0.85;
+    transition: opacity 0.2s ease;
+}
+
+.modern-team-card.card-private::before {
+    background: linear-gradient(90deg, #f43f5e, #e11d48);
+}
+
+.modern-team-card.card-public::before {
+    background: linear-gradient(90deg, #10b981, #059669);
+}
+
+.modern-team-card:hover {
+    transform: translateY(-5px) !important;
+    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.09) !important;
+}
+
+/* Modern Access Button */
+.btn-access-action {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
+    color: #ffffff !important;
+    border-radius: 50rem !important;
+    font-weight: 600 !important;
+    font-size: 0.825rem !important;
+    padding: 0.4rem 1.1rem !important;
+    border: none !important;
+    box-shadow: 0 3px 10px rgba(37, 99, 235, 0.25) !important;
+    transition: all 0.2s ease !important;
+    text-decoration: none !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.35rem !important;
+}
+
+.btn-access-action:hover {
+    background: linear-gradient(135deg, #1d4ed8, #1e40af) !important;
+    color: #ffffff !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4) !important;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .app-sidebar {
