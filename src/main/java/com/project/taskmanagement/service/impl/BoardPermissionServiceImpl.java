@@ -91,4 +91,27 @@ public class BoardPermissionServiceImpl implements BoardPermissionService {
             }
         }
     }
+
+    @Override
+    public void checkEditPermission(Long boardId, User user) {
+        if (user == null || user.getId() == null) {
+            throw new AccessDeniedException("Bạn cần đăng nhập để thực hiện thao tác này!");
+        }
+
+        if (!boardRepository.existsById(boardId)) {
+            throw new ResourceNotFoundException("Không tìm thấy bảng với ID: " + boardId);
+        }
+
+        if (!boardMemberRepository.existsByBoardIdAndUserId(boardId, user.getId())) {
+            throw new AccessDeniedException("Bạn phải là thành viên của bảng mới có quyền chỉnh sửa (tạo/sửa/xóa danh sách và thẻ công việc)!");
+        }
+    }
+
+    @Override
+    public boolean canEditBoard(Long boardId, Long userId) {
+        if (boardId == null || userId == null) {
+            return false;
+        }
+        return boardMemberRepository.existsByBoardIdAndUserId(boardId, userId);
+    }
 }

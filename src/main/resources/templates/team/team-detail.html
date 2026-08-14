@@ -35,12 +35,10 @@
                             <div class="d-flex align-items-center gap-2">
                                 <h3 class="fw-bold m-0 fs-4" th:text="${team.name}">Tên nhóm</h3>
                                 <!-- Visibility Badge -->
-                                <span th:if="${team.visibility.name() == 'PUBLIC'}"
-                                    class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1">
+                                <span th:if="${team.visibility.name() == 'PUBLIC'}" class="badge-visibility-public">
                                     <i class="bi bi-globe me-1"></i>Công khai
                                 </span>
-                                <span th:if="${team.visibility.name() == 'PRIVATE'}"
-                                    class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2.5 py-1">
+                                <span th:if="${team.visibility.name() == 'PRIVATE'}" class="badge-visibility-private">
                                     <i class="bi bi-lock-fill me-1"></i>Riêng tư
                                 </span>
                             </div>

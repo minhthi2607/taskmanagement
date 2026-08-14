@@ -133,6 +133,39 @@ class BoardServiceImplTest {
     }
 
     @Test
+    @DisplayName("Story #4: Lấy danh sách bảng do user tự tạo group theo Team và sắp xếp Alphabet")
+    void getCreatedBoardsGroupedByTeamAlphabetical_Success() {
+        Board board1 = Board.builder().id(1L).teamId(10L).name("Beta Board").createdBy(1L).build();
+        Board board2 = Board.builder().id(2L).teamId(10L).name("Alpha Board").createdBy(1L).build();
+
+        when(boardRepository.findByCreatedBy(1L)).thenReturn(java.util.List.of(board1, board2));
+        when(teamRepository.findById(10L)).thenReturn(Optional.of(testTeam));
+
+        var result = boardService.getCreatedBoardsGroupedByTeamAlphabetical(1L);
+
+        assertEquals(1, result.size());
+        assertEquals("Test Team", result.get(0).getTeam().getName());
+        assertEquals("Alpha Board", result.get(0).getBoards().get(0).getName());
+        assertEquals("Beta Board", result.get(0).getBoards().get(1).getName());
+    }
+
+    @Test
+    @DisplayName("Story #5: Lấy danh sách bảng user tham gia (ngoại trừ tự tạo) group theo Team và sắp xếp Alphabet")
+    void getJoinedBoardsGroupedByTeamAlphabetical_Success() {
+        BoardMember bm1 = BoardMember.builder().boardId(200L).userId(1L).role(Role.MEMBER).build();
+        Board joinedBoard = Board.builder().id(200L).teamId(10L).name("Joined Board").createdBy(99L).build();
+
+        when(boardMemberRepository.findByUserId(1L)).thenReturn(java.util.List.of(bm1));
+        when(boardRepository.findById(200L)).thenReturn(Optional.of(joinedBoard));
+        when(teamRepository.findById(10L)).thenReturn(Optional.of(testTeam));
+
+        var result = boardService.getJoinedBoardsGroupedByTeamAlphabetical(1L);
+
+        assertEquals(1, result.size());
+        assertEquals("Joined Board", result.get(0).getBoards().get(0).getName());
+    }
+
+    @Test
     @DisplayName("Lấy chi tiết board kiểm tra quyền xem thành công")
     void getBoardDetail_Success() {
         when(boardRepository.findById(100L)).thenReturn(Optional.of(testBoard));

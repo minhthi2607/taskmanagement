@@ -1,5 +1,6 @@
 package com.project.taskmanagement.service;
 
+import com.project.taskmanagement.dto.TeamBoardsDto;
 import com.project.taskmanagement.dto.BoardCreateDto;
 import com.project.taskmanagement.dto.BoardUpdateDto;
 import com.project.taskmanagement.entity.Board;
@@ -11,9 +12,20 @@ import java.util.List;
 public interface BoardService {
 
     /**
-     * Lấy danh sách các Bảng thuộc về Nhóm theo ID nhóm (Story #19)
+     * Story #19: Lấy danh sách các Bảng thuộc về Nhóm theo ID nhóm
      */
     List<Board> getBoardsByTeamId(Long teamId, User currentUser);
+
+    /**
+     * Story #4: Lấy danh sách Bảng do user tự tạo (createdBy == userId), group theo Team, sắp xếp Alphabet
+     */
+    List<TeamBoardsDto> getCreatedBoardsGroupedByTeamAlphabetical(Long userId);
+
+    /**
+     * Story #5: Lấy danh sách Bảng user được gán làm thành viên (ngoại trừ tự tạo), group theo Team, sắp xếp Alphabet
+     */
+    List<TeamBoardsDto> getJoinedBoardsGroupedByTeamAlphabetical(Long userId);
+
     /**
      * Story #20: Tạo mới một Bảng công việc trong Nhóm (dùng BoardCreateDto)
      */

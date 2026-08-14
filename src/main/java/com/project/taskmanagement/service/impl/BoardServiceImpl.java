@@ -2,6 +2,7 @@ package com.project.taskmanagement.service.impl;
 
 import com.project.taskmanagement.dto.BoardCreateDto;
 import com.project.taskmanagement.dto.BoardUpdateDto;
+import com.project.taskmanagement.dto.TeamBoardsDto;
 import com.project.taskmanagement.entity.Board;
 import com.project.taskmanagement.entity.BoardMember;
 import com.project.taskmanagement.entity.Team;
@@ -22,7 +23,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -33,8 +37,6 @@ public class BoardServiceImpl implements BoardService {
     private final TeamService teamService;
     private final BoardMemberRepository boardMemberRepository;
     private final BoardPermissionService boardPermissionService;
-
-
 
     @Override
     @Transactional(readOnly = true)
@@ -53,6 +55,104 @@ public class BoardServiceImpl implements BoardService {
 
         return boardRepository.findByTeamIdOrderByCreatedAtDesc(teamId);
     }
+
+    /**
+     * Story #4: Lấy danh sách Bảng do user tự tạo (createdBy == userId), group theo Team, sắp xếp Alphabet
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public List<TeamBoardsDto> getCreatedBoardsGroupedByTeamAlphabetical(Long userId) {
+        if (userId == null) {
+            return List.of();
+        }
+
+        List<Board> createdBoards = boardRepository.findByCreatedBy(userId);
+        if (createdBoards.isEmpty()) {
+            return List.of();
+        }
+
+        Map<Long, List<Board>> boardByTeamId = createdBoards.stream()
+                .filter(b -> b.getTeamId() != null)
+                .collect(Collectors.groupingBy(Board::getTeamId));
+
+        List<TeamBoardsDto> result = new ArrayList<>();
+        for (Map.Entry<Long, List<Board>> entry : boardByTeamId.entrySet()) {
+            Long teamId = entry.getKey();
+            Team team = teamRepository.findById(teamId).orElse(null);
+            if (team == null) continue;
+
+            List<Board> sortedBoards = entry.getValue().stream()
+                    .sorted((b1, b2) -> String.CASE_INSENSITIVE_ORDER.compare(
+                            b1.getName() != null ? b1.getName() : "",
+                            b2.getName() != null ? b2.getName() : ""))
+                    .collect(Collectors.toList());
+
+            result.add(TeamBoardsDto.builder()
+                    .team(team)
+                    .boards(sortedBoards)
+                    .build());
+        }
+
+        result.sort((t1, t2) -> String.CASE_INSENSITIVE_ORDER.compare(
+                t1.getTeam() != null && t1.getTeam().getName() != null ? t1.getTeam().getName() : "",
+                t2.getTeam() != null && t2.getTeam().getName() != null ? t2.getTeam().getName() : ""));
+
+        return result;
+    }
+
+    /**
+     * Story #5: Lấy danh sách Bảng user được gán làm thành viên (ngoại trừ tự tạo), group theo Team, sắp xếp Alphabet
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public List<TeamBoardsDto> getJoinedBoardsGroupedByTeamAlphabetical(Long userId) {
+        if (userId == null) {
+            return List.of();
+        }
+
+        List<BoardMember> boardMemberships = boardMemberRepository.findByUserId(userId);
+        if (boardMemberships.isEmpty()) {
+            return List.of();
+        }
+
+        List<Board> joinedBoards = boardMemberships.stream()
+                .map(bm -> boardRepository.findById(bm.getBoardId()).orElse(null))
+                .filter(b -> b != null && !userId.equals(b.getCreatedBy()))
+                .collect(Collectors.toList());
+
+        if (joinedBoards.isEmpty()) {
+            return List.of();
+        }
+
+        Map<Long, List<Board>> boardByTeamId = joinedBoards.stream()
+                .filter(b -> b.getTeamId() != null)
+                .collect(Collectors.groupingBy(Board::getTeamId));
+
+        List<TeamBoardsDto> result = new ArrayList<>();
+        for (Map.Entry<Long, List<Board>> entry : boardByTeamId.entrySet()) {
+            Long teamId = entry.getKey();
+            Team team = teamRepository.findById(teamId).orElse(null);
+            if (team == null) continue;
+
+            List<Board> sortedBoards = entry.getValue().stream()
+                    .sorted((b1, b2) -> String.CASE_INSENSITIVE_ORDER.compare(
+                            b1.getName() != null ? b1.getName() : "",
+                            b2.getName() != null ? b2.getName() : ""))
+                    .collect(Collectors.toList());
+
+            result.add(TeamBoardsDto.builder()
+                    .team(team)
+                    .boards(sortedBoards)
+                    .build());
+        }
+
+        result.sort((t1, t2) -> String.CASE_INSENSITIVE_ORDER.compare(
+                t1.getTeam() != null && t1.getTeam().getName() != null ? t1.getTeam().getName() : "",
+                t2.getTeam() != null && t2.getTeam().getName() != null ? t2.getTeam().getName() : ""));
+
+        return result;
+    }
+
     /**
      * Story #20: Tạo mới board (Riêng tư/Nhóm/Công khai) qua DTO
      */
