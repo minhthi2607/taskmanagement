@@ -222,24 +222,34 @@
                         </div>
                     </div>
                     
-                    <!-- Cards List Container (Tạm thời chờ Story Card #32) -->
+                    <!-- Cards List Container (Story Card #32/#35) -->
                     <div class="card-body p-2 d-flex flex-column gap-2" style="max-height: 480px; overflow-y: auto;">
                         <div th:if="${#lists.isEmpty(list.cards)}" class="text-center py-4 text-muted bg-white rounded border border-dashed border-2">
                             <i class="bi bi-card-checklist d-block mb-1 text-secondary opacity-50 fs-4"></i>
                             <span class="small">Chưa có thẻ nào</span>
                         </div>
-                        
-                        <!-- Loop cards khi có data -->
-                        <div th:each="card : ${list.cards}" class="card border shadow-xs p-2 rounded-2 bg-white hover-shadow transition-all">
+
+                        <!-- Loop cards khi có data: bấm vào mở modal chi tiết (#35) -->
+                        <div th:each="card : ${list.cards}" class="card border shadow-xs p-2 rounded-2 bg-white hover-shadow transition-all"
+                             style="cursor: pointer;" data-bs-toggle="modal" th:data-bs-target="'#cardDetailModal-' + ${card.id}">
                             <span class="fw-semibold text-dark fs-6" th:text="${card.title}">Tiêu đề thẻ</span>
                         </div>
                     </div>
-                    
-                    <!-- Footer: Add Card Button (Story Card #32) -->
-                    <div class="card-footer bg-white border-0 p-2 rounded-bottom-3">
-                        <button th:if="${canEditBoard}" class="btn btn-light btn-sm w-100 text-start text-muted rounded-2 border-0 d-flex align-items-center gap-2 py-1.5 px-2">
+
+                    <!-- Footer: Add Card Quick Form (Story Card #32) -->
+                    <div th:if="${canEditBoard}" class="card-footer bg-white border-0 p-2 rounded-bottom-3">
+                        <button type="button" class="btn btn-light btn-sm w-100 text-start text-muted rounded-2 border-0 d-flex align-items-center gap-2 py-1.5 px-2"
+                                th:id="'addCardTrigger-' + ${list.id}" th:onclick="'showAddCardForm(' + ${list.id} + ')'">
                             <i class="bi bi-plus-lg"></i>Thêm thẻ mới
                         </button>
+                        <form class="add-card-form d-none" th:id="'addCardForm-' + ${list.id}"
+                              th:action="@{/task-list/{id}/cards/create(id=${list.id})}" method="post">
+                            <input type="text" name="title" class="form-control form-control-sm mb-2" placeholder="Nhập tiêu đề thẻ..." required>
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary btn-sm px-3">Thêm</button>
+                                <button type="button" class="btn btn-light btn-sm px-3" th:onclick="'hideAddCardForm(' + ${list.id} + ')'">Hủy</button>
+                            </div>
+                        </form>
                     </div>
                 </div>
 
@@ -481,7 +491,122 @@
         </div>
     </th:block>
 
+    <!-- Modals cho từng Card (Story #35: xem/sửa chi tiết Card) -->
+    <th:block th:each="list : ${taskLists}">
+        <th:block th:each="card : ${list.cards}">
+            <div class="modal fade" th:id="'cardDetailModal-' + ${card.id}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered modal-lg">
+                    <div class="modal-content border-0 shadow">
+                        <div class="modal-header bg-primary text-white">
+                            <h5 class="modal-title fw-bold fs-6" th:text="${card.title}">Tiêu đề thẻ</h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body p-4">
+
+                            <!-- b. Mô tả -->
+                            <div class="mb-4">
+                                <h6 class="fw-bold text-secondary"><i class="bi bi-text-paragraph me-2"></i>Mô tả</h6>
+                                <form th:if="${canEditBoard}" th:action="@{/card/{id}/update(id=${card.id})}" method="post">
+                                    <textarea name="description" class="form-control form-control-sm mb-2" rows="3"
+                                              placeholder="Thêm mô tả chi tiết cho thẻ..." th:text="${card.description}"></textarea>
+                                    <button type="submit" class="btn btn-primary btn-sm px-3">Lưu</button>
+                                </form>
+                                <p th:unless="${canEditBoard}" class="mb-0 text-secondary"
+                                   th:text="${card.description != null and !#strings.isEmpty(card.description)} ? ${card.description} : 'Chưa có mô tả'">Mô tả</p>
+                            </div>
+
+                            <!-- c. Thành viên -->
+                            <div class="mb-4">
+                                <h6 class="fw-bold text-secondary"><i class="bi bi-people me-2"></i>Thành viên</h6>
+                                <ul class="list-group list-group-flush mb-2">
+                                    <li class="list-group-item d-flex justify-content-between align-items-center px-0" th:each="cm : ${card.members}">
+                                        <span>
+                                            <span class="fw-semibold" th:text="${cm.user.displayName}">Tên</span>
+                                            <span class="text-secondary small ms-1" th:text="${cm.user.email}">email@example.com</span>
+                                        </span>
+                                        <form th:if="${canEditBoard}" method="post" class="m-0"
+                                              th:action="@{/card/{cardId}/members/{userId}/remove(cardId=${card.id}, userId=${cm.userId})}">
+                                            <button type="submit" class="btn btn-outline-danger btn-sm">Gỡ</button>
+                                        </form>
+                                    </li>
+                                    <li class="list-group-item px-0 text-muted small" th:if="${#lists.isEmpty(card.members)}">Chưa có thành viên nào.</li>
+                                </ul>
+                                <form th:if="${canEditBoard}" th:action="@{/card/{id}/members/add(id=${card.id})}" method="post" class="d-flex gap-2">
+                                    <select name="userId" class="form-select form-select-sm">
+                                        <th:block th:each="bm : ${boardMembers}">
+                                            <option th:if="${!card.members.![userId].contains(bm.user.id)}"
+                                                    th:value="${bm.user.id}" th:text="${bm.user.displayName} + ' (' + ${bm.user.email} + ')'">Thành viên</option>
+                                        </th:block>
+                                    </select>
+                                    <button type="submit" class="btn btn-outline-primary btn-sm px-3">Thêm</button>
+                                </form>
+                            </div>
+
+                            <!-- d. Bình luận -->
+                            <div class="mb-4">
+                                <h6 class="fw-bold text-secondary"><i class="bi bi-chat-left-text me-2"></i>Bình luận</h6>
+                                <div class="mb-2" style="max-height: 200px; overflow-y: auto;">
+                                    <div th:each="cmt : ${card.comments}" class="mb-2 pb-2 border-bottom">
+                                        <div class="d-flex justify-content-between">
+                                            <span class="fw-semibold small" th:text="${cmt.user.displayName}">Tên</span>
+                                            <span class="text-muted" style="font-size: 0.75rem;" th:text="${#temporals.format(cmt.createdAt, 'dd/MM/yyyy HH:mm')}">thời gian</span>
+                                        </div>
+                                        <div class="small" th:text="${cmt.content}">Nội dung bình luận</div>
+                                    </div>
+                                    <div th:if="${#lists.isEmpty(card.comments)}" class="text-muted small">Chưa có bình luận nào.</div>
+                                </div>
+                                <form th:if="${canEditBoard}" th:action="@{/card/{id}/comments/add(id=${card.id})}" method="post" class="d-flex gap-2">
+                                    <input type="text" name="content" class="form-control form-control-sm" placeholder="Viết bình luận..." required>
+                                    <button type="submit" class="btn btn-outline-primary btn-sm px-3">Thêm</button>
+                                </form>
+                            </div>
+
+                            <!-- e. Đổi vị trí trong danh sách (#33) -->
+                            <div th:if="${canEditBoard}" class="mb-4">
+                                <h6 class="fw-bold text-secondary"><i class="bi bi-arrows-move me-2"></i>Đổi vị trí trong danh sách</h6>
+                                <form th:action="@{/card/{id}/reorder(id=${card.id})}" method="post" class="d-flex gap-2">
+                                    <input type="number" name="position" class="form-control form-control-sm" th:value="${card.position}" step="5" min="0" required>
+                                    <button type="submit" class="btn btn-info btn-sm text-white px-3">Cập nhật</button>
+                                </form>
+                            </div>
+
+                            <!-- f. Di chuyển sang danh sách khác (#34) -->
+                            <div th:if="${canEditBoard}">
+                                <h6 class="fw-bold text-secondary"><i class="bi bi-arrow-left-right me-2"></i>Di chuyển sang danh sách khác</h6>
+                                <form th:action="@{/card/{id}/move(id=${card.id})}" method="post" class="d-flex gap-2">
+                                    <select name="targetTaskListId" class="form-select form-select-sm">
+                                        <option th:each="otherList : ${taskLists}" th:if="${otherList.id != list.id}"
+                                                th:value="${otherList.id}" th:text="${otherList.name}">Danh sách khác</option>
+                                    </select>
+                                    <input type="number" name="position" class="form-control form-control-sm" placeholder="Vị trí" step="5" min="0" required>
+                                    <button type="submit" class="btn btn-primary btn-sm px-3">Di chuyển</button>
+                                </form>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </th:block>
+    </th:block>
+
 </div>
+
+<th:block layout:fragment="scripts">
+    <script>
+        function showAddCardForm(listId) {
+            document.getElementById('addCardTrigger-' + listId).classList.add('d-none');
+            const form = document.getElementById('addCardForm-' + listId);
+            form.classList.remove('d-none');
+            form.querySelector('input[name="title"]').focus();
+        }
+
+        function hideAddCardForm(listId) {
+            document.getElementById('addCardTrigger-' + listId).classList.remove('d-none');
+            document.getElementById('addCardForm-' + listId).classList.add('d-none');
+        }
+    </script>
+</th:block>
 
 </body>
 

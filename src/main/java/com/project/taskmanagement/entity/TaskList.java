@@ -36,6 +36,7 @@ public class TaskList {
 
     @Builder.Default
     @OneToMany(mappedBy = "taskList", cascade = CascadeType.ALL)
+    @OrderBy("position ASC")
     private List<Card> cards = new ArrayList<>();
 
     @PrePersist

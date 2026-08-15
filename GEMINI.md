@@ -12,9 +12,9 @@ Luôn giao tiếp với nhau bằng tiếng Việt
 - **Sprint hiện tại: Sprint 2** — xây dựng Board, BoardMember, TaskList và Card (chức năng cốt lõi kiểu Trello).
 
 **Tiến độ Sprint 2:**
-- ✅ Đã hoàn thành: 9 Entity mới + cập nhật `Invitation` (xem mục 6, đánh dấu ✅)
-- ⏳ Đang làm tiếp: Repository → Service → Controller
-- ⚠️ Lưu ý: validate "đúng 1 trong 2 `teamId`/`boardId` có giá trị" khi tạo Invitation sẽ xử lý ở tầng Service (#23), chưa làm ở Entity
+- ✅ Đã merge vào `dev`: Board + BoardMember (Khuyên, Thành — PR #12, #11), TaskList (Đào — PR đã merge)
+- ⏳ Đang làm: Card (#32-35, Thi) — chưa bắt đầu, nhánh riêng cần `merge dev` mới nhất trước khi code (đã có sẵn đầy đủ Board/BoardMember/TaskList)
+- Mỗi PR trên đều đã qua đủ quy trình: review code tĩnh → build thật → test end-to-end qua giao diện thật trước khi merge — giữ nguyên quy trình này cho PR của Card
 
 ## 2. Công nghệ sử dụng
 
@@ -330,6 +330,10 @@ BoardMember joinBoard(User user, Board board) {
 - **Thêm vào cuối**: `position = max(position hiện có) + 10`
 - **Di chuyển Card sang TaskList khác** (#34): chỉ cần đổi `taskListId` + gán `position` mới theo vị trí chèn trong TaskList đích — không cần shift hàng loạt record ở cả 2 phía
 - Chỉ khi khoảng trống giữa 2 position liền kề = 0 (hết chỗ chèn) mới cần "rebalance" lại toàn bộ position trong list đó (trường hợp hiếm, xử lý sau nếu cần)
+
+> **Về UI nhập vị trí — đã chốt cho TaskList (#30)**: `sprint2.txt` (yêu cầu gốc) không yêu cầu kéo-thả, chỉ ghi "đổi vị trí". Đào triển khai #30 bằng **ô nhập số thủ công** (người dùng tự gõ giá trị position, ví dụ "15" để chèn giữa 10 và 20) thay vì kéo-thả tự động tính `(trước+sau)/2` — đã xác nhận, giữ nguyên cách làm này, đã merge vào `dev`.
+>
+> **Card (#33, #34) do Thi phụ trách — CHƯA chốt UI, tự quyết định khi code**: có thể áp dụng cùng cách "nhập số thủ công" như #30 để nhất quán và đơn giản hóa, hoặc làm khác đi (dropdown chọn vị trí như đã thống nhất trước đó cho #34 — xem mục 12 phần E). Phép tính `(position_trước + position_sau) / 2` ở trên vẫn là công thức đúng cần dùng trong Service dù UI chọn kiểu nào — chỉ khác ở chỗ input đến từ đâu (người dùng tự gõ số, hay hệ thống tự tính từ vị trí kéo-thả/chọn dropdown).
 
 ## 9. Quy tắc tạo/sửa Card (#32 vs #35)
 
