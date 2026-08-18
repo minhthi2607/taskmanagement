@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security" layout:decorate="~{layout/main}">
+
+<head>
+    <title th:text="${board.name + ' - Bảng công việc'}">Chi tiết Bảng công việc</title>
+</head>
+
+<body>
+
+<div layout:fragment="content">
+
+    <!-- Flash Notification Messages -->
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show shadow-sm py-2 px-3" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i>
+        <span th:text="${successMessage}">Thành công</span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show shadow-sm py-2 px-3" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <span th:text="${errorMessage}">Lỗi</span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <!-- Board Header Banner -->
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body p-3 p-md-4">
+            <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="bg-primary text-white rounded-3 d-flex align-items-center justify-content-center"
+                         style="width: 52px; height: 52px;">
+                        <i class="bi bi-kanban-fill fs-3"></i>
+                    </div>
+                    <div>
+                        <div class="d-flex align-items-center gap-2">
+                            <h3 class="fw-bold m-0 fs-4" th:text="${board.name}">Tên bảng</h3>
+
+                            <!-- Visibility Badges -->
+                            <span th:if="${board.visibility.name() == 'PUBLIC'}" class="badge-visibility-public">
+                                <i class="bi bi-globe me-1"></i>Công khai
+                            </span>
+                            <span th:if="${board.visibility.name() == 'GROUP'}" class="badge-visibility-group">
+                                <i class="bi bi-people-fill me-1"></i>Nhóm
+                            </span>
+                            <span th:if="${board.visibility.name() == 'PRIVATE'}" class="badge-visibility-private">
+                                <i class="bi bi-lock-fill me-1"></i>Riêng tư
+                            </span>
+                        </div>
+                        <div class="text-muted small mt-1">
+                                <span th:if="${board.team != null}">
+                                    <i class="bi bi-people me-1"></i>Nhóm:
+                                    <a th:href="@{/team/{id}(id=${board.teamId})}" class="text-decoration-none fw-semibold" th:text="${board.team.name}">Tên Nhóm</a>
+                                    <span class="mx-1">•</span>
+                                </span>
+                            <span><i class="bi bi-calendar3 me-1"></i>Tạo ngày: <span
+                                    th:text="${#temporals.format(board.createdAt, 'dd/MM/yyyy')}">01/01/2026</span></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="d-flex align-items-center gap-2">
+                    
+                    <!-- Nút tham gia bảng (Cho người chưa là thành viên, Story #25) -->
+                    <form th:if="${!isBoardMember}" th:action="@{/board/{id}/join(id=${board.id})}" method="post" class="m-0">
+                        <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 d-flex align-items-center gap-1 shadow-sm">
+                            <i class="bi bi-person-plus-fill me-1"></i>
+                            <span>Tham gia bảng</span>
+                        </button>
+                    </form>
+
+                    <!-- Dành riêng cho ADMIN bảng -->
+                    <th:block th:if="${isBoardAdmin}">
+                        <!-- Story #23: Mời thành viên -->
+                        <button type="button" data-bs-toggle="modal" data-bs-target="#inviteMemberModal"
+                                class="btn btn-outline-success btn-sm rounded-pill px-3 d-flex align-items-center gap-1">
+                            <i class="bi bi-person-plus me-1"></i>
+                            <span>Mời thành viên</span>
+                        </button>
+
+                        <!-- Story #21: Đổi tên Board -->
+                        <button type="button" data-bs-toggle="modal" data-bs-target="#renameBoardModal"
+                                class="btn btn-outline-secondary btn-sm rounded-pill px-3 d-flex align-items-center gap-1">
+                            <i class="bi bi-pencil-square me-1"></i>
+                            <span>Đổi tên</span>
+                        </button>
+
+                        <!-- Story #22: Đổi Visibility -->
+                        <button type="button" data-bs-toggle="modal" data-bs-target="#changeVisibilityModal"
+                                class="btn btn-outline-primary btn-sm rounded-pill px-3 d-flex align-items-center gap-1">
+                            <i class="bi bi-eye-fill me-1"></i>
+                            <span>Quyền riêng tư</span>
+                        </button>
+
+                        <!-- Story #27: Xóa Board -->
+                        <button type="button" data-bs-toggle="modal" data-bs-target="#deleteBoardModal"
+                                class="btn btn-outline-danger btn-sm rounded-pill px-3 d-flex align-items-center gap-1">
+                            <i class="bi bi-trash-fill me-1"></i>
+                            <span>Xóa bảng</span>
+                        </button>
+                    </th:block>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Members Section -->
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-transparent border-0 pt-4 pb-0 px-4">
+            <h5 class="fw-bold mb-0"><i class="bi bi-people-fill me-2 text-primary"></i>Thành viên bảng</h5>
+        </div>
+        <div class="card-body p-4">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                    <tr>
+                        <th class="ps-3">Tên thành viên</th>
+                        <th>Email</th>
+                        <th>Vai trò</th>
+                        <th th:if="${isBoardAdmin}" class="text-end pe-3">Thao tác</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="member : ${boardMembers}">
+                        <td class="ps-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <img th:if="${member.user.avatarUrl != null}" th:src="${member.user.avatarUrl}" alt="Avatar" class="rounded-circle object-fit-cover" width="36" height="36">
+                                <div th:unless="${member.user.avatarUrl != null}" class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                                    <i class="bi bi-person fs-5"></i>
+                                </div>
+                                <div>
+                                    <span class="fw-semibold text-dark d-block" th:text="${member.user.displayName}">Tên người dùng</span>
+                                    <span th:if="${member.user.id == currentUser.id}" class="badge bg-primary-subtle text-primary mt-1" style="font-size: 0.7rem;">Bạn</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="text-secondary" th:text="${member.user.email}">email@example.com</td>
+                        <td>
+                            <span th:if="${!isBoardAdmin or member.user.id == currentUser.id}" 
+                                  class="badge px-2 py-1" 
+                                  th:classappend="${member.role.name() == 'ADMIN'} ? 'bg-danger-subtle text-danger' : 'bg-info-subtle text-info'" 
+                                  th:text="${member.role.name() == 'ADMIN'} ? 'Quản trị viên' : 'Thành viên'">Vai trò</span>
+                                  
+                            <form th:if="${isBoardAdmin and member.user.id != currentUser.id}" 
+                                  th:action="@{/board/{boardId}/members/{userId}/role(boardId=${board.id}, userId=${member.user.id})}" 
+                                  method="post" class="m-0">
+                                <select name="role" class="form-select form-select-sm w-auto shadow-none" onchange="this.form.submit()">
+                                    <option value="ADMIN" th:selected="${member.role.name() == 'ADMIN'}">Quản trị viên</option>
+                                    <option value="MEMBER" th:selected="${member.role.name() == 'MEMBER'}">Thành viên</option>
+                                </select>
+                            </form>
+                        </td>
+                        <td th:if="${isBoardAdmin}" class="text-end pe-3">
+                            <button th:if="${member.user.id != currentUser.id}" 
+                                    type="button" 
+                                    class="btn btn-outline-danger btn-sm rounded-circle p-1 lh-1 d-inline-flex justify-content-center align-items-center" 
+                                    style="width: 28px; height: 28px;"
+                                    data-bs-toggle="modal" 
+                                    th:data-bs-target="'#removeMemberModal-' + ${member.user.id}" 
+                                    title="Loại bỏ thành viên">
+                                <i class="bi bi-x fs-5"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(boardMembers)}">
+                        <td colspan="4" class="text-center text-muted py-4">
+                            <i class="bi bi-person-x fs-2 d-block mb-2 opacity-50"></i>
+                            Chưa có thành viên nào trong bảng này.
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- TaskLists Kanban Container (Module D - TaskList - Story #28, #29, #30, #31) -->
+    <div class="card border-0 shadow-sm mb-4 bg-light-subtle">
+        <div class="card-header bg-transparent border-0 pt-4 pb-2 px-4 d-flex justify-content-between align-items-center">
+            <h5 class="fw-bold mb-0">
+                <i class="bi bi-kanban me-2 text-primary"></i>Danh sách công việc
+            </h5>
+            <span class="badge bg-secondary-subtle text-secondary rounded-pill px-3 py-1.5" th:text="${#lists.size(taskLists)} + ' danh sách'">0 danh sách</span>
+        </div>
+        <div class="card-body p-3 p-md-4 overflow-x-auto">
+            <div class="d-flex gap-3 align-items-start pb-2" style="min-height: 280px; min-width: max-content;">
+                
+                <!-- TaskList Column Loop -->
+                <div th:each="list : ${taskLists}" class="card border-0 shadow-sm rounded-3" style="width: 290px; flex-shrink: 0; background-color: #f8f9fa;">
+                    <div class="card-header bg-white border-0 pt-3 pb-2 px-3 d-flex justify-content-between align-items-center rounded-top-3">
+                        <div class="d-flex align-items-center gap-2 overflow-hidden me-2">
+                            <h6 class="fw-bold mb-0 text-truncate text-dark" th:text="${list.name}">Tên danh sách</h6>
+                            <span class="badge bg-light text-secondary border rounded-pill px-2 py-0.5" style="font-size: 0.65rem;" th:text="'#' + ${list.position}">#10</span>
+                        </div>
+                        
+                        <!-- List Actions Dropdown (Dành cho người có quyền sửa canEditBoard) -->
+                        <div th:if="${canEditBoard}" class="dropdown">
+                            <button class="btn btn-sm btn-light rounded-circle p-1 border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="width: 28px; height: 28px;">
+                                <i class="bi bi-three-dots-vertical"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="font-size: 0.875rem;">
+                                <!-- Story #29: Đổi tên -->
+                                <li>
+                                    <button class="dropdown-item d-flex align-items-center gap-2" type="button" data-bs-toggle="modal" th:data-bs-target="'#renameListModal-' + ${list.id}">
+                                        <i class="bi bi-pencil me-1 text-primary"></i>Đổi tên danh sách
+                                    </button>
+                                </li>
+                                <!-- Story #30: Đổi vị trí -->
+                                <li>
+                                    <button class="dropdown-item d-flex align-items-center gap-2" type="button" data-bs-toggle="modal" th:data-bs-target="'#reorderListModal-' + ${list.id}">
+                                        <i class="bi bi-arrows-move me-1 text-info"></i>Đổi vị trí (Position)
+                                    </button>
+                                </li>
+                                <li><hr class="dropdown-divider my-1"></li>
+                                <!-- Story #31: Xóa danh sách -->
+                                <li>
+                                    <button class="dropdown-item d-flex align-items-center gap-2 text-danger" type="button" data-bs-toggle="modal" th:data-bs-target="'#deleteListModal-' + ${list.id}">
+                                        <i class="bi bi-trash me-1"></i>Xóa danh sách
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <!-- Cards List Container (Story Card #32/#35) -->
+                    <div class="card-body p-2 d-flex flex-column gap-2" style="max-height: 480px; overflow-y: auto;">
+                        <div th:if="${#lists.isEmpty(list.cards)}" class="text-center py-4 text-muted bg-white rounded border border-dashed border-2">
+                            <i class="bi bi-card-checklist d-block mb-1 text-secondary opacity-50 fs-4"></i>
+                            <span class="small">Chưa có thẻ nào</span>
+                        </div>
+
+                        <!-- Loop cards khi có data: bấm vào mở modal chi tiết (#35) -->
+                        <div th:each="card : ${list.cards}" class="card border shadow-xs p-2 rounded-2 bg-white hover-shadow transition-all"
+                             style="cursor: pointer;" data-bs-toggle="modal" th:data-bs-target="'#cardDetailModal-' + ${card.id}">
+                            <span class="fw-semibold text-dark fs-6" th:text="${card.title}">Tiêu đề thẻ</span>
+                        </div>
+                    </div>
+
+                    <!-- Footer: Add Card Quick Form (Story Card #32) -->
+                    <div th:if="${canEditBoard}" class="card-footer bg-white border-0 p-2 rounded-bottom-3">
+                        <button type="button" class="btn btn-light btn-sm w-100 text-start text-muted rounded-2 border-0 d-flex align-items-center gap-2 py-1.5 px-2"
+                                th:id="'addCardTrigger-' + ${list.id}" th:onclick="'showAddCardForm(' + ${list.id} + ')'">
+                            <i class="bi bi-plus-lg"></i>Thêm thẻ mới
+                        </button>
+                        <form class="add-card-form d-none" th:id="'addCardForm-' + ${list.id}"
+                              th:action="@{/task-list/{id}/cards/create(id=${list.id})}" method="post">
+                            <input type="text" name="title" class="form-control form-control-sm mb-2" placeholder="Nhập tiêu đề thẻ..." required>
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary btn-sm px-3">Thêm</button>
+                                <button type="button" class="btn btn-light btn-sm px-3" th:onclick="'hideAddCardForm(' + ${list.id} + ')'">Hủy</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Story #28: Add New TaskList Column Form -->
+                <div th:if="${canEditBoard}" class="card border-0 shadow-sm rounded-3" style="width: 290px; flex-shrink: 0; background-color: #e9ecef;">
+                    <div class="card-body p-3">
+                        <h6 class="fw-bold mb-3 text-secondary"><i class="bi bi-plus-circle-fill me-2 text-primary"></i>Thêm danh sách mới</h6>
+                        <form th:action="@{/board/{boardId}/task-list/create(boardId=${board.id})}" method="post">
+                            <div class="mb-3">
+                                <input type="text" name="name" class="form-control form-control-sm" placeholder="Nhập tên danh sách..." required>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 fw-semibold">
+                                    Thêm danh sách
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Alert nếu chưa có danh sách và chưa join -->
+                <div th:if="${#lists.isEmpty(taskLists) and !canEditBoard}" class="w-100 text-center py-5 text-muted bg-white rounded shadow-sm">
+                    <i class="bi bi-layout-three-columns fs-1 d-block mb-2 text-secondary"></i>
+                    <h5 class="fw-semibold">Bảng này chưa có danh sách công việc nào</h5>
+                    <p class="mb-0 small">Tham gia bảng để tạo danh sách và bắt đầu quản lý công việc.</p>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- MODALS (#21, #22, #27, #23, #24)           -->
+    <!-- ========================================== -->
+
+    <!-- Modal Story #23: Mời thành viên -->
+    <div class="modal fade" id="inviteMemberModal" tabindex="-1" aria-labelledby="inviteMemberModalLabel" aria-hidden="true" th:if="${isBoardAdmin}">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title fw-bold fs-6" id="inviteMemberModalLabel"><i class="bi bi-person-plus-fill me-2"></i>Mời thành viên vào bảng</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form th:action="@{/board/{id}/members/invite(id=${board.id})}" method="post">
+                    <div class="modal-body p-4">
+                        <div class="mb-3">
+                            <label for="inviteEmail" class="form-label fw-semibold">Địa chỉ Email <span class="text-danger">*</span></label>
+                            <input type="email" class="form-control" id="inviteEmail" name="email" required placeholder="nhap-email@domain.com">
+                        </div>
+                        <div class="mb-3">
+                            <label for="inviteRole" class="form-label fw-semibold">Quyền hạn <span class="text-danger">*</span></label>
+                            <select class="form-select" id="inviteRole" name="role">
+                                <option value="MEMBER" selected>Thành viên</option>
+                                <option value="ADMIN">Quản trị viên</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer bg-light border-0">
+                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn btn-success btn-sm px-4">Gửi lời mời</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Story #24: Loại bỏ thành viên -->
+    <th:block th:if="${isBoardAdmin}">
+        <div th:each="member : ${boardMembers}" th:if="${member.user.id != currentUser.id}">
+            <div class="modal fade" th:id="'removeMemberModal-' + ${member.user.id}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content border-0 shadow">
+                        <div class="modal-header bg-danger text-white">
+                            <h5 class="modal-title fw-bold fs-6"><i class="bi bi-person-x-fill me-2"></i>Xác nhận loại bỏ thành viên</h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body p-4">
+                            <p class="mb-0">Bạn có chắc chắn muốn loại bỏ <strong><span th:text="${member.user.displayName}">Tên</span></strong> (<span th:text="${member.user.email}">email</span>) khỏi bảng này không?</p>
+                        </div>
+                        <div class="modal-footer bg-light border-0">
+                            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Hủy</button>
+                            <form th:action="@{/board/{boardId}/members/{userId}/remove(boardId=${board.id}, userId=${member.user.id})}" method="post" class="d-inline">
+                                <button type="submit" class="btn btn-danger btn-sm px-3">Loại bỏ</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </th:block>
+
+    <!-- Modal Story #21: Đổi tên Board -->
+    <div class="modal fade" id="renameBoardModal" tabindex="-1" aria-labelledby="renameBoardModalLabel" aria-hidden="true" th:if="${isBoardAdmin}">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title fw-bold fs-6" id="renameBoardModalLabel"><i class="bi bi-pencil-square me-2"></i>Đổi tên bảng công việc</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form th:action="@{/board/{id}/update-name(id=${board.id})}" method="post">
+                    <div class="modal-body p-4">
+                        <div class="mb-3">
+                            <label for="renameInput" class="form-label fw-semibold">Tên bảng mới <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="renameInput" name="name" th:value="${board.name}" required placeholder="Nhập tên bảng mới">
+                        </div>
+                    </div>
+                    <div class="modal-footer bg-light border-0">
+                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn btn-primary btn-sm px-4">Lưu thay đổi</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Story #22: Đổi Visibility Board -->
+    <div class="modal fade" id="changeVisibilityModal" tabindex="-1" aria-labelledby="changeVisibilityModalLabel" aria-hidden="true" th:if="${isBoardAdmin}">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title fw-bold fs-6" id="changeVisibilityModalLabel"><i class="bi bi-eye-fill me-2"></i>Đổi quyền riêng tư của bảng</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form th:action="@{/board/{id}/update-visibility(id=${board.id})}" method="post">
+                    <div class="modal-body p-4">
+                        <div class="mb-3">
+                            <label for="visibilitySelect" class="form-label fw-semibold">Quyền truy cập <span class="text-danger">*</span></label>
+                            <select class="form-select" id="visibilitySelect" name="visibility">
+                                <option value="PRIVATE" th:selected="${board.visibility.name() == 'PRIVATE'}">🔒 Riêng tư (Private)</option>
+                                <option value="GROUP" th:selected="${board.visibility.name() == 'GROUP'}">👥 Nhóm (Group)</option>
+                                <option value="PUBLIC" th:selected="${board.visibility.name() == 'PUBLIC'}">🌐 Công khai (Public)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer bg-light border-0">
+                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn btn-primary btn-sm px-4">Cập nhật</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Story #27: Xác nhận Xóa Board -->
+    <div class="modal fade" id="deleteBoardModal" tabindex="-1" aria-labelledby="deleteBoardModalLabel" aria-hidden="true" th:if="${isBoardAdmin}">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title fw-bold fs-6" id="deleteBoardModalLabel"><i class="bi bi-exclamation-triangle-fill me-2"></i>Xác nhận xóa bảng</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="mb-0">Bạn có chắc chắn muốn xóa bảng công việc <strong th:text="${board.name}">Tên Bảng</strong> không?</p>
+                    <p class="text-danger small mt-2 mb-0"><i class="bi bi-info-circle me-1"></i>Hành động này không thể hoàn tác. Tất cả danh sách và thẻ công việc thuộc bảng này cũng sẽ bị xóa.</p>
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Hủy</button>
+                    <form th:action="@{/board/{id}/delete(id=${board.id})}" method="post" class="d-inline">
+                        <button type="submit" class="btn btn-danger btn-sm px-3">Xóa bảng</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals cho từng TaskList (Story #29, #30, #31) -->
+    <th:block th:if="${canEditBoard}">
+        <div th:each="list : ${taskLists}">
+            <!-- Modal Story #29: Đổi tên TaskList -->
+            <div class="modal fade" th:id="'renameListModal-' + ${list.id}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content border-0 shadow">
+                        <div class="modal-header bg-primary text-white">
+                            <h5 class="modal-title fw-bold fs-6"><i class="bi bi-pencil-square me-2"></i>Đổi tên danh sách</h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <form th:action="@{/task-list/{id}/update-name(id=${list.id})}" method="post">
+                            <div class="modal-body p-4">
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold">Tên danh sách mới <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" name="name" th:value="${list.name}" required placeholder="Nhập tên mới">
+                                </div>
+                            </div>
+                            <div class="modal-footer bg-light border-0">
+                                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Hủy</button>
+                                <button type="submit" class="btn btn-primary btn-sm px-4">Lưu thay đổi</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Story #30: Đổi vị trí TaskList (Position thưa) -->
+            <div class="modal fade" th:id="'reorderListModal-' + ${list.id}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content border-0 shadow">
+                        <div class="modal-header bg-info text-white">
+                            <h5 class="modal-title fw-bold fs-6"><i class="bi bi-arrows-move me-2"></i>Đổi vị trí hiển thị (Position)</h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <form th:action="@{/task-list/{id}/update-position(id=${list.id})}" method="post">
+                            <div class="modal-body p-4">
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold">Vị trí (Position số thưa: 10, 20, 30...) <span class="text-danger">*</span></label>
+                                    <input type="number" class="form-control" name="position" th:value="${list.position}" step="5" min="0" required>
+                                    <small class="text-muted mt-1 d-block">Giá trị position càng nhỏ danh sách sẽ nằm càng sát phía bên trái.</small>
+                                </div>
+                            </div>
+                            <div class="modal-footer bg-light border-0">
+                                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Hủy</button>
+                                <button type="submit" class="btn btn-info btn-sm text-white px-4">Cập nhật vị trí</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Story #31: Xác nhận xóa TaskList -->
+            <div class="modal fade" th:id="'deleteListModal-' + ${list.id}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content border-0 shadow">
+                        <div class="modal-header bg-danger text-white">
+                            <h5 class="modal-title fw-bold fs-6"><i class="bi bi-exclamation-triangle-fill me-2"></i>Xác nhận xóa danh sách</h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body p-4">
+                            <p class="mb-0">Bạn có chắc chắn muốn xóa danh sách <strong th:text="${list.name}">Tên Danh Sách</strong> không?</p>
+                            <p class="text-danger small mt-2 mb-0"><i class="bi bi-info-circle me-1"></i>Tất cả thẻ công việc thuộc danh sách này cũng sẽ bị xóa vĩnh viễn.</p>
+                        </div>
+                        <div class="modal-footer bg-light border-0">
+                            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Hủy</button>
+                            <form th:action="@{/task-list/{id}/delete(id=${list.id})}" method="post" class="d-inline">
+                                <button type="submit" class="btn btn-danger btn-sm px-3">Xóa danh sách</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </th:block>
+
+    <!-- Modals cho từng Card (Story #35: xem/sửa chi tiết Card) -->
+    <th:block th:each="list : ${taskLists}">
+        <th:block th:each="card : ${list.cards}">
+            <div class="modal fade" th:id="'cardDetailModal-' + ${card.id}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered modal-lg">
+                    <div class="modal-content border-0 shadow">
+                        <div class="modal-header bg-primary text-white">
+                            <h5 class="modal-title fw-bold fs-6" th:text="${card.title}">Tiêu đề thẻ</h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body p-4">
+
+                            <!-- b. Mô tả -->
+                            <div class="mb-4">
+                                <h6 class="fw-bold text-secondary"><i class="bi bi-text-paragraph me-2"></i>Mô tả</h6>
+                                <form th:if="${canEditBoard}" th:action="@{/card/{id}/update(id=${card.id})}" method="post">
+                                    <textarea name="description" class="form-control form-control-sm mb-2" rows="3"
+                                              placeholder="Thêm mô tả chi tiết cho thẻ..." th:text="${card.description}"></textarea>
+                                    <button type="submit" class="btn btn-primary btn-sm px-3">Lưu</button>
+                                </form>
+                                <p th:unless="${canEditBoard}" class="mb-0 text-secondary"
+                                   th:text="${card.description != null and !#strings.isEmpty(card.description)} ? ${card.description} : 'Chưa có mô tả'">Mô tả</p>
+                            </div>
+
+                            <!-- c. Thành viên -->
+                            <div class="mb-4">
+                                <h6 class="fw-bold text-secondary"><i class="bi bi-people me-2"></i>Thành viên</h6>
+                                <ul class="list-group list-group-flush mb-2">
+                                    <li class="list-group-item d-flex justify-content-between align-items-center px-0" th:each="cm : ${card.members}">
+                                        <span>
+                                            <span class="fw-semibold" th:text="${cm.user.displayName}">Tên</span>
+                                            <span class="text-secondary small ms-1" th:text="${cm.user.email}">email@example.com</span>
+                                        </span>
+                                        <form th:if="${canEditBoard}" method="post" class="m-0"
+                                              th:action="@{/card/{cardId}/members/{userId}/remove(cardId=${card.id}, userId=${cm.userId})}">
+                                            <button type="submit" class="btn btn-outline-danger btn-sm">Gỡ</button>
+                                        </form>
+                                    </li>
+                                    <li class="list-group-item px-0 text-muted small" th:if="${#lists.isEmpty(card.members)}">Chưa có thành viên nào.</li>
+                                </ul>
+                                <form th:if="${canEditBoard}" th:action="@{/card/{id}/members/add(id=${card.id})}" method="post" class="d-flex gap-2">
+                                    <select name="userId" class="form-select form-select-sm">
+                                        <th:block th:each="bm : ${boardMembers}">
+                                            <option th:if="${!card.members.![userId].contains(bm.user.id)}"
+                                                    th:value="${bm.user.id}" th:text="${bm.user.displayName} + ' (' + ${bm.user.email} + ')'">Thành viên</option>
+                                        </th:block>
+                                    </select>
+                                    <button type="submit" class="btn btn-outline-primary btn-sm px-3">Thêm</button>
+                                </form>
+                            </div>
+
+                            <!-- d. Bình luận -->
+                            <div class="mb-4">
+                                <h6 class="fw-bold text-secondary"><i class="bi bi-chat-left-text me-2"></i>Bình luận</h6>
+                                <div class="mb-2" style="max-height: 200px; overflow-y: auto;">
+                                    <div th:each="cmt : ${card.comments}" class="mb-2 pb-2 border-bottom">
+                                        <div class="d-flex justify-content-between">
+                                            <span class="fw-semibold small" th:text="${cmt.user.displayName}">Tên</span>
+                                            <span class="text-muted" style="font-size: 0.75rem;" th:text="${#temporals.format(cmt.createdAt, 'dd/MM/yyyy HH:mm')}">thời gian</span>
+                                        </div>
+                                        <div class="small" th:text="${cmt.content}">Nội dung bình luận</div>
+                                    </div>
+                                    <div th:if="${#lists.isEmpty(card.comments)}" class="text-muted small">Chưa có bình luận nào.</div>
+                                </div>
+                                <form th:if="${canEditBoard}" th:action="@{/card/{id}/comments/add(id=${card.id})}" method="post" class="d-flex gap-2">
+                                    <input type="text" name="content" class="form-control form-control-sm" placeholder="Viết bình luận..." required>
+                                    <button type="submit" class="btn btn-outline-primary btn-sm px-3">Thêm</button>
+                                </form>
+                            </div>
+
+                            <!-- e. Đổi vị trí trong danh sách (#33) -->
+                            <div th:if="${canEditBoard}" class="mb-4">
+                                <h6 class="fw-bold text-secondary"><i class="bi bi-arrows-move me-2"></i>Đổi vị trí trong danh sách</h6>
+                                <form th:action="@{/card/{id}/reorder(id=${card.id})}" method="post" class="d-flex gap-2">
+                                    <input type="number" name="position" class="form-control form-control-sm" th:value="${card.position}" step="5" min="0" required>
+                                    <button type="submit" class="btn btn-info btn-sm text-white px-3">Cập nhật</button>
+                                </form>
+                            </div>
+
+                            <!-- f. Di chuyển sang danh sách khác (#34) -->
+                            <div th:if="${canEditBoard}">
+                                <h6 class="fw-bold text-secondary"><i class="bi bi-arrow-left-right me-2"></i>Di chuyển sang danh sách khác</h6>
+                                <form th:action="@{/card/{id}/move(id=${card.id})}" method="post" class="d-flex gap-2">
+                                    <select name="targetTaskListId" class="form-select form-select-sm">
+                                        <option th:each="otherList : ${taskLists}" th:if="${otherList.id != list.id}"
+                                                th:value="${otherList.id}" th:text="${otherList.name}">Danh sách khác</option>
+                                    </select>
+                                    <input type="number" name="position" class="form-control form-control-sm" placeholder="Vị trí" step="5" min="0" required>
+                                    <button type="submit" class="btn btn-primary btn-sm px-3">Di chuyển</button>
+                                </form>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </th:block>
+    </th:block>
+
+</div>
+
+<th:block layout:fragment="scripts">
+    <script>
+        function showAddCardForm(listId) {
+            document.getElementById('addCardTrigger-' + listId).classList.add('d-none');
+            const form = document.getElementById('addCardForm-' + listId);
+            form.classList.remove('d-none');
+            form.querySelector('input[name="title"]').focus();
+        }
+
+        function hideAddCardForm(listId) {
+            document.getElementById('addCardTrigger-' + listId).classList.remove('d-none');
+            document.getElementById('addCardForm-' + listId).classList.add('d-none');
+        }
+
+        // Story #35: Khôi phục lại mô tả gốc khi đóng modal chi tiết Card
+        // mà không bấm Lưu, tránh hiển thị sai nội dung mô tả ở lần mở kế tiếp.
+        document.querySelectorAll('[id^="cardDetailModal-"]').forEach(function (modalEl) {
+            let originalDescription = '';
+
+            modalEl.addEventListener('show.bs.modal', function () {
+                const textarea = modalEl.querySelector('textarea[name="description"]');
+                if (textarea) {
+                    originalDescription = textarea.value;
+                }
+            });
+
+            modalEl.addEventListener('hidden.bs.modal', function () {
+                const textarea = modalEl.querySelector('textarea[name="description"]');
+                if (textarea) {
+                    textarea.value = originalDescription;
+                }
+            });
+        });
+    </script>
+</th:block>
+
+</body>
+
+</html>

@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      layout:decorate="~{layout/main}">
+<head>
+    <title>Danh sách nhóm - Task Management</title>
+</head>
+<body>
+
+    <div layout:fragment="content">
+        
+        <!-- Header & Action Button -->
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <div>
+                <h3 class="fw-bold mb-1 fs-4">Các nhóm của bạn</h3>
+                <p class="text-muted mb-0 small">Danh sách tất cả các nhóm làm việc bạn tạo hoặc tham gia (Sắp xếp Alphabet)</p>
+            </div>
+            <a th:href="@{/team/create}" class="btn btn-primary btn-sm d-flex align-items-center gap-2 px-3 shadow-sm">
+                <i class="bi bi-plus-lg"></i>
+                <span>Tạo nhóm mới</span>
+            </a>
+        </div>
+
+        <!-- Flash Messages -->
+        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show shadow-sm py-2 px-3" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            <span th:text="${errorMessage}">Lỗi</span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show shadow-sm py-2 px-3" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i>
+            <span th:text="${successMessage}">Thành công</span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+
+        <!-- Teams Grid List (Story #14 - Alphabetical order) -->
+        <div class="row g-3" th:if="${teams != null and !#lists.isEmpty(teams)}">
+            <div th:each="team : ${teams}" class="col-12 col-md-6 col-lg-4">
+                <div class="modern-team-card h-100 p-3" th:classappend="${team.visibility.name() == 'PRIVATE'} ? 'card-private' : (${team.visibility.name() == 'PUBLIC'} ? 'card-public' : '')">
+                    <div class="card-body d-flex flex-column justify-content-between p-2">
+                        <div>
+                            <div class="d-flex align-items-center justify-content-between mb-3 gap-2 overflow-hidden">
+                                <span class="badge-team-type" th:text="${team.type}">Loại nhóm</span>
+                                <span th:if="${team.visibility.name() == 'PUBLIC'}" class="badge-visibility-public">
+                                    <i class="bi bi-globe me-1"></i>Công khai
+                                </span>
+                                <span th:if="${team.visibility.name() == 'PRIVATE'}" class="badge-visibility-private">
+                                    <i class="bi bi-lock-fill me-1"></i>Riêng tư
+                                </span>
+                            </div>
+                            <h5 class="card-title fw-bold mb-2 fs-5">
+                                <a th:href="@{/team/{id}(id=${team.id})}" class="text-decoration-none text-dark hover-primary" th:text="${team.name}">Tên nhóm</a>
+                            </h5>
+                            <!-- Mô tả 160 ký tự & Xem thêm (Chức năng 2) -->
+                            <div class="card-text text-muted small mb-3 desc-text"
+                                th:with="hasDesc=${team.description != null and !#strings.isEmpty(team.description)},
+                                         desc=${hasDesc ? team.description : 'Không có mô tả nào.'},
+                                         isLong=${hasDesc and #strings.length(team.description) > 160}">
+                                <span th:if="${!isLong}" th:text="${desc}">Mô tả ngắn</span>
+                                <span th:if="${isLong}">
+                                    <span th:id="|listDescShort-${team.id}|" th:text="${#strings.substring(desc, 0, 160) + '...'}">Mô tả rút gọn</span>
+                                    <span th:id="|listDescFull-${team.id}|" class="d-none" th:text="${desc}">Mô tả đầy đủ</span>
+                                    <button type="button" class="desc-toggle-btn" th:id="|listDescBtn-${team.id}|" th:onclick="|toggleListDescription(${team.id})|">Xem thêm</button>
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div class="pt-3 border-top d-flex align-items-center justify-content-between mt-2">
+                            <span class="text-muted small fw-medium">
+                                <i class="bi bi-people-fill me-1 text-primary"></i>
+                                <span th:text="${team.members != null ? #lists.size(team.members) : 0}">0</span> thành viên
+                            </span>
+                            <a th:href="@{/team/{id}(id=${team.id})}" class="btn-access-action">
+                                <span>Truy cập</span> <i class="bi bi-arrow-right ms-1"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Empty State -->
+        <div class="card border-0 shadow-sm py-5 text-center" th:if="${teams == null or #lists.isEmpty(teams)}">
+            <div class="card-body">
+                <i class="bi bi-people-fill fs-1 text-muted d-block mb-3"></i>
+                <h5 class="fw-bold">Bạn chưa tham gia hoặc tạo nhóm nào</h5>
+                <p class="text-muted mb-4">Hãy tạo nhóm mới để bắt đầu cộng tác và quản lý bảng công việc cùng đồng đội.</p>
+                <a th:href="@{/team/create}" class="btn btn-primary px-4">
+                    <i class="bi bi-plus-lg me-1"></i> Tạo nhóm ngay
+                </a>
+            </div>
+        </div>
+
+        <script>
+            function toggleListDescription(teamId) {
+                var shortElem = document.getElementById('listDescShort-' + teamId);
+                var fullElem = document.getElementById('listDescFull-' + teamId);
+                var btnElem = document.getElementById('listDescBtn-' + teamId);
+
+                if (shortElem.classList.contains('d-none')) {
+                    shortElem.classList.remove('d-none');
+                    fullElem.classList.add('d-none');
+                    btnElem.textContent = 'Xem thêm';
+                } else {
+                    shortElem.classList.add('d-none');
+                    fullElem.classList.remove('d-none');
+                    btnElem.textContent = 'Thu gọn';
+                }
+            }
+        </script>
+
+    </div>
+
+</body>
+</html>

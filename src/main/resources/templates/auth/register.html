@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/auth}">
+<head>
+    <title>Đăng ký tài khoản - Task Management</title>
+</head>
+<body>
+
+<div layout:fragment="content" class="container py-5">
+
+    <div class="row justify-content-center">
+        <div class="col-12 col-sm-10 col-md-8 col-lg-6 col-xl-5">
+
+            <div class="card border-0 shadow-sm mb-4">
+
+                <!-- Header -->
+                <div class="card-header bg-transparent border-0 text-center pt-4 px-4 pb-2">
+
+                    <div class="bg-primary text-white rounded-3 d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 56px; height: 56px;">
+                        <i class="bi bi-kanban-fill fs-3"></i>
+                    </div>
+                    <h4 class="fw-bold m-0 text-dark">Tạo tài khoản mới</h4>
+                    <p class="text-muted small mt-2 mb-0">Điền thông tin bên dưới để bắt đầu quản lý công việc</p>
+                </div>
+
+                <!-- Body -->
+                <div class="card-body p-4">
+                    <form th:action="@{/auth/register}" th:object="${registerDto}" method="post" novalidate>
+
+                        <!-- Email -->
+                        <div class="mb-3">
+                            <label for="email" class="form-label fw-bold text-muted small text-uppercase">Địa chỉ Email <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-secondary border-end-0"><i class="bi bi-envelope"></i></span>
+                                <input type="email" id="email" th:field="*{email}" class="form-control border-start-0 ps-0" th:classappend="${#fields.hasErrors('email')} ? 'is-invalid' : ''" placeholder="vi-du@domain.com" required>
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
+                            </div>
+                        </div>
+
+                        <!-- Tên hiển thị -->
+                        <div class="mb-3">
+                            <label for="displayName" class="form-label fw-bold text-muted small text-uppercase">Tên hiển thị <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-secondary border-end-0"><i class="bi bi-person"></i></span>
+                                <input type="text" id="displayName" th:field="*{displayName}" class="form-control border-start-0 ps-0" th:classappend="${#fields.hasErrors('displayName')} ? 'is-invalid' : ''" placeholder="Ví dụ: Nguyễn Văn A" required>
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('displayName')}" th:errors="*{displayName}"></div>
+                            </div>
+                        </div>
+
+                        <!-- Số điện thoại -->
+                        <div class="mb-3">
+                            <label for="phone" class="form-label fw-bold text-muted small text-uppercase">Số điện thoại</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-secondary border-end-0"><i class="bi bi-telephone"></i></span>
+                                <input type="tel" id="phone" th:field="*{phone}" class="form-control border-start-0 ps-0" th:classappend="${#fields.hasErrors('phone')} ? 'is-invalid' : ''" placeholder="Ví dụ: 0912345678">
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}"></div>
+                            </div>
+                        </div>
+
+                        <!-- Mật khẩu -->
+                        <div class="mb-3">
+                            <label for="password" class="form-label fw-bold text-muted small text-uppercase">Mật khẩu <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-secondary border-end-0"><i class="bi bi-lock"></i></span>
+                                <input type="password" id="password" th:field="*{password}" class="form-control border-start-0 ps-0 border-end-0" th:classappend="${#fields.hasErrors('password')} ? 'is-invalid' : ''" placeholder="Từ 6 đến 32 ký tự" required>
+                                <button class="btn btn-outline-secondary border-start-0 text-muted" type="button" onclick="togglePasswordVisibility('password', 'toggleIcon1')">
+                                    <i class="bi bi-eye" id="toggleIcon1"></i>
+                                </button>
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></div>
+                            </div>
+                        </div>
+
+                        <!-- Nhập lại mật khẩu -->
+                        <div class="mb-4">
+                            <label for="confirmPassword" class="form-label fw-bold text-muted small text-uppercase">Nhập lại mật khẩu <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-secondary border-end-0"><i class="bi bi-shield-lock"></i></span>
+                                <input type="password" id="confirmPassword" th:field="*{confirmPassword}" class="form-control border-start-0 ps-0 border-end-0" th:classappend="${#fields.hasErrors('confirmPassword')} ? 'is-invalid' : ''" placeholder="Xác nhận lại mật khẩu" required>
+                                <button class="btn btn-outline-secondary border-start-0 text-muted" type="button" onclick="togglePasswordVisibility('confirmPassword', 'toggleIcon2')">
+                                    <i class="bi bi-eye" id="toggleIcon2"></i>
+                                </button>
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('confirmPassword')}" th:errors="*{confirmPassword}"></div>
+                            </div>
+                        </div>
+
+                        <!-- Nút Submit -->
+                        <button type="submit" class="btn btn-primary w-100 py-2 d-flex align-items-center justify-content-center gap-2">
+                            <i class="bi bi-person-plus-fill"></i>
+                            <span>Đăng ký tài khoản</span>
+                        </button>
+
+                        <!-- Đã có tài khoản -->
+                        <div class="text-center mt-4 pt-3 border-top">
+                            <span class="text-muted small">Đã có tài khoản?</span>
+                            <a th:href="@{/auth/login}" class="text-primary fw-semibold small text-decoration-none ms-1">Đăng nhập ngay</a>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        function togglePasswordVisibility(inputId, iconId) {
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById(iconId);
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.replace('bi-eye', 'bi-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.replace('bi-eye-slash', 'bi-eye');
+            }
+        }
+    </script>
+</div>
+
+</body>
+</html>

@@ -1,7 +1,6 @@
 <!DOCTYPE html>
-<html lang="vi"
-      xmlns:th="http://www.thymeleaf.org"
-      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
 <body>
 
     <!-- Menu top Fragment (Story #2) -->
@@ -10,7 +9,8 @@
             <!-- Left Side: Logo App & Mobile Sidebar Toggle -->
             <div class="d-flex align-items-center">
                 <!-- Mobile Sidebar Toggle -->
-                <button class="btn btn-light d-md-none me-2" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu" aria-label="Toggle sidebar">
+                <button class="btn btn-light d-md-none me-2" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#sidebarMenu" aria-label="Toggle sidebar">
                     <i class="bi bi-list fs-5"></i>
                 </button>
 
@@ -21,24 +21,31 @@
                 </a>
 
                 <!-- Lối tắt hiển thị Danh sách các nhóm của người dùng -->
-                <div class="dropdown d-none d-sm-block">
-                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="teamsShortcutDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                <div class="dropdown d-none d-sm-block" sec:authorize="isAuthenticated()">
+                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button"
+                        id="teamsShortcutDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="bi bi-people me-1"></i> Các nhóm của tôi
                     </button>
-                    <ul class="dropdown-menu shadow" aria-labelledby="teamsShortcutDropdown">
-                        <li><h6 class="dropdown-header">Danh sách nhóm</h6></li>
-                        <!-- Placeholder cho Thành / Hướng ghép data qua th:each -->
-                        <!-- 
-                            COMMENT HƯỚNG DẪN CHO THÀNH / HƯỚNG:
-                            Dùng th:each="team : ${userTeams}" lặp các Team đã tham gia / tự tạo
-                            <li th:each="team : ${userTeams}">
-                                <a class="dropdown-item" th:href="@{/team/{id}(id=${team.id})}" th:text="${team.name}">Tên Nhóm</a>
-                            </li>
-                        -->
-                        <li><a class="dropdown-item" href="#team1"><i class="bi bi-folder2-open me-2 text-primary"></i>Phát triển Sản phẩm (Dev)</a></li>
-                        <li><a class="dropdown-item" href="#team2"><i class="bi bi-folder2-open me-2 text-success"></i>Thiết kế UI/UX</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item text-primary" th:href="@{/#teams-section}"><i class="bi bi-grid me-2"></i>Xem tất cả nhóm</a></li>
+                    <ul class="dropdown-menu shadow py-2" style="max-width: 280px; max-height: 320px; overflow-y: auto;"
+                        aria-labelledby="teamsShortcutDropdown">
+                        <li>
+                            <h6 class="dropdown-header fw-bold">Danh sách nhóm của bạn</h6>
+                        </li>
+                        <li th:each="team : ${userTeamsAlphabetical}">
+                            <a class="dropdown-item d-flex align-items-center gap-2 text-truncate py-1.5"
+                                th:href="@{/team/{id}(id=${team.id})}">
+                                <i class="bi bi-folder2-open text-primary fs-6"></i>
+                                <span class="text-truncate" th:text="${team.name}">Tên Nhóm</span>
+                            </a>
+                        </li>
+                        <li th:if="${userTeamsAlphabetical == null or #lists.isEmpty(userTeamsAlphabetical)}">
+                            <span class="dropdown-item text-muted small"><em>Chưa có nhóm nào</em></span>
+                        </li>
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
+                        <li><a class="dropdown-item text-primary fw-semibold" th:href="@{/team/list}"><i
+                                    class="bi bi-grid me-2"></i>Xem tất cả nhóm</a></li>
                     </ul>
                 </div>
             </div>
@@ -48,32 +55,47 @@
 
                 <!-- Nút Thông báo (Icon quả chuông 🔔) -->
                 <div class="dropdown">
-                    <button class="btn btn-light rounded-circle position-relative p-2" type="button" id="notificationDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Thông báo">
+                    <button class="btn btn-light rounded-circle position-relative p-2" type="button"
+                        id="notificationDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Thông báo">
                         <i class="bi bi-bell fs-5"></i>
-                        <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
+                        <span
+                            class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
                             <span class="visually-hidden">Thông báo mới</span>
                         </span>
                     </button>
-                    <ul class="dropdown-menu dropdown-menu-end shadow p-2" style="width: 300px;" aria-labelledby="notificationDropdown">
-                        <li><h6 class="dropdown-header border-bottom pb-2">Thông báo</h6></li>
+                    <ul class="dropdown-menu dropdown-menu-end shadow p-2" style="width: 300px;"
+                        aria-labelledby="notificationDropdown">
+                        <li>
+                            <h6 class="dropdown-header border-bottom pb-2">Thông báo</h6>
+                        </li>
                         <li class="py-2 px-3 text-muted small text-center">Không có thông báo mới nào</li>
                     </ul>
                 </div>
 
                 <!-- Trường hợp: ĐÃ ĐĂNG NHẬP (sec:authorize="isAuthenticated()") -->
                 <div sec:authorize="isAuthenticated()" class="dropdown">
-                    <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle text-dark" id="userMenuDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle text-dark"
+                        id="userMenuDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                         <!-- Avatar đại diện -->
-                        <div class="avatar-circle me-2">
-                            <span sec:authentication="principal.user.displayName != null ? #strings.substring(principal.user.displayName, 0, 1) : 'U'">U</span>
+                        <div class="avatar-circle me-2" th:with="hasAvatar=${#authentication.principal.user.avatarUrl != null and !#authentication.principal.user.avatarUrl.isBlank()},
+                                      user=${#authentication.principal.user}">
+                            <img th:if="${hasAvatar}" th:src="${user.avatarUrl}" alt="Avatar"
+                                class="w-100 h-100 rounded-circle" style="object-fit: cover;">
+                            <span th:unless="${hasAvatar}"
+                                th:text="${user.displayName != null and !#strings.isEmpty(user.displayName) ? #strings.substring(user.displayName, 0, 1) : 'U'}">U</span>
                         </div>
                         <!-- Tên hiển thị người dùng -->
-                        <span class="fw-semibold d-none d-md-inline" sec:authentication="principal.user.displayName">Tên người dùng</span>
+                        <span class="fw-semibold d-none d-md-inline"
+                            th:text="${#authentication.principal.user.displayName}">Tên người dùng</span>
+
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="userMenuDropdown">
                         <li class="px-3 py-2 border-bottom">
-                            <div class="fw-bold" sec:authentication="principal.user.displayName">Tên người dùng</div>
-                            <div class="small text-muted" sec:authentication="principal.user.email">email@example.com</div>
+                            <div class="fw-bold" th:text="${#authentication.principal.user.displayName}">Tên người dùng
+                            </div>
+                            <div class="small text-muted" th:text="${#authentication.principal.user.email}">
+                                email@example.com</div>
+
                         </li>
                         <!-- Story #9: Thay đổi thông tin cá nhân -->
                         <li>
@@ -87,7 +109,9 @@
                                 <i class="bi bi-key me-2"></i> Đổi mật khẩu
                             </a>
                         </li>
-                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
                         <!-- Nút Đăng xuất -->
                         <li>
                             <form th:action="@{/auth/logout}" method="post" class="d-inline">
@@ -114,4 +138,5 @@
     </header>
 
 </body>
+
 </html>
