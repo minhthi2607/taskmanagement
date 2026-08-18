@@ -28,6 +28,7 @@ Luôn giao tiếp với nhau bằng tiếng Việt
 - **Validate**: Spring Boot Validation (Hibernate Validator)
 - **Gửi mail**: Spring Boot Starter Mail (dùng cho tính năng mời thành viên qua email — Team lẫn Board)
 - **Khác**: Lombok (giảm boilerplate code)
+- **Kéo-thả (từ phản hồi giảng viên, xem mục 13)**: jQuery UI Draggable/Sortable (`https://jqueryui.com/draggable/`) — dùng cho #30 (TaskList) và #33/#34 (Card). ⚠️ jQuery UI Sortable/Draggable **không hỗ trợ bàn phím** (bug chính thức #9633 của jQuery UI, chưa fix nhiều năm) — bắt buộc giữ song song phương án nhập số thủ công làm fallback, xem mục 13.2.
 
 ## 3. Cấu trúc thư mục & Layout Template
 
@@ -297,10 +298,12 @@ boolean canEditBoard(User user, Board board) {
 
 ### 7.3 Quy tắc JOIN board (trở thành BoardMember) — story #25
 
+> ⚠️ **CẬP NHẬT (phản hồi giảng viên, xem mục 13.1)**: dòng `GROUP` bên dưới đã lỗi thời — board GROUP giờ **tự động thêm mọi TeamMember**, không cần bấm "Tham gia bảng" nữa. Bảng dưới đây giữ nguyên để tham khảo lịch sử thiết kế ban đầu; chi tiết thiết kế mới xem mục 13.1.
+
 | Visibility | Ai join được | Cần duyệt? |
 |---|---|---|
 | `PRIVATE` | Chỉ người được mời trực tiếp qua #23 | Không tự join được, phải được mời |
-| `GROUP` | Bất kỳ TeamMember nào của Team chứa board | Không cần duyệt — tự join thành công ngay khi bấm "Tham gia bảng" |
+| `GROUP` | ~~Bất kỳ TeamMember nào của Team chứa board~~ — **nay tự động, xem mục 13.1** | ~~Không cần duyệt — tự join thành công ngay khi bấm "Tham gia bảng"~~ |
 | `PUBLIC` | Bất kỳ ai (kể cả không phải TeamMember) | Không cần duyệt — tự join thành công ngay khi bấm "Tham gia bảng" |
 
 ```java
@@ -321,6 +324,8 @@ BoardMember joinBoard(User user, Board board) {
 ```
 
 > Người tạo board (`Board.createdBy`) tự động có `BoardMember` với `role = ADMIN` ngay lúc tạo, không cần qua bước join.
+>
+> Code mẫu trên vẫn đúng cho **PUBLIC** và **PRIVATE**. Với **GROUP**, method `joinBoard()` (nút "Tham gia bảng") gần như không còn cần thiết vì thành viên đã tự động có mặt — xem mục 13.1 để biết có nên giữ lại nút này hay không.
 
 ## 8. Quy tắc position (sắp xếp thứ tự)
 
@@ -331,9 +336,11 @@ BoardMember joinBoard(User user, Board board) {
 - **Di chuyển Card sang TaskList khác** (#34): chỉ cần đổi `taskListId` + gán `position` mới theo vị trí chèn trong TaskList đích — không cần shift hàng loạt record ở cả 2 phía
 - Chỉ khi khoảng trống giữa 2 position liền kề = 0 (hết chỗ chèn) mới cần "rebalance" lại toàn bộ position trong list đó (trường hợp hiếm, xử lý sau nếu cần)
 
-> **Về UI nhập vị trí — đã chốt cho TaskList (#30)**: `sprint2.txt` (yêu cầu gốc) không yêu cầu kéo-thả, chỉ ghi "đổi vị trí". Đào triển khai #30 bằng **ô nhập số thủ công** (người dùng tự gõ giá trị position, ví dụ "15" để chèn giữa 10 và 20) thay vì kéo-thả tự động tính `(trước+sau)/2` — đã xác nhận, giữ nguyên cách làm này, đã merge vào `dev`.
+> ⚠️ **CẬP NHẬT (phản hồi giảng viên, xem mục 13.2)**: UI "nhập số thủ công" mô tả bên dưới **không còn là phương án chính** — đã chuyển sang kéo-thả (jQuery UI) cho cả #30 và #33/#34. Đoạn dưới đây giữ để tham khảo lịch sử; chi tiết thiết kế mới xem mục 13.2.
 >
-> **Card (#33, #34) do Thi phụ trách — CHƯA chốt UI, tự quyết định khi code**: có thể áp dụng cùng cách "nhập số thủ công" như #30 để nhất quán và đơn giản hóa, hoặc làm khác đi (dropdown chọn vị trí như đã thống nhất trước đó cho #34 — xem mục 12 phần E). Phép tính `(position_trước + position_sau) / 2` ở trên vẫn là công thức đúng cần dùng trong Service dù UI chọn kiểu nào — chỉ khác ở chỗ input đến từ đâu (người dùng tự gõ số, hay hệ thống tự tính từ vị trí kéo-thả/chọn dropdown).
+> **Về UI nhập vị trí — quyết định BAN ĐẦU cho TaskList (#30)**: `sprint2.txt` (yêu cầu gốc) không yêu cầu kéo-thả, chỉ ghi "đổi vị trí". Đào triển khai #30 bằng **ô nhập số thủ công** (người dùng tự gõ giá trị position, ví dụ "15" để chèn giữa 10 và 20) thay vì kéo-thả tự động tính `(trước+sau)/2` — đã merge vào `dev` theo quyết định này.
+>
+> **Card (#33, #34) do Thi phụ trách — quyết định BAN ĐẦU**: áp dụng cùng cách "nhập số thủ công" như #30, dùng dropdown chọn TaskList đích cho #34 — đã merge vào `dev` theo quyết định này.
 
 ## 9. Quy tắc tạo/sửa Card (#32 vs #35)
 
@@ -420,3 +427,60 @@ Board (#20-27) phải có trước thì TaskList (#28-31) mới code được, T
 
 - Khuyên hoàn thành entity `Board` + `BoardMember` + chức năng tạo board cơ bản **sớm nhất trong sprint**, đẩy lên nhánh chung `board-base` để Đào/Thi có thể dựa vào code trước khi các phần còn lại (#21, #22, #23-27) hoàn thiện.
 - Đào và Thi có thể song song thiết kế entity `TaskList`/`Card` từ đầu sprint (không phụ thuộc logic phân quyền hoàn chỉnh), chỉ cần chờ `Board` entity tồn tại.
+
+## 13. Cải tiến sau phản hồi giảng viên (Sprint 2.1)
+
+Sprint 2 đã merge và test xong (xem lịch sử ở các mục trên). Sau khi giáo viên chấm/xem demo, có 3 phản hồi cần chỉnh sửa lại — không phải bug, mà là cải tiến thiết kế. Áp dụng sau khi Sprint 2 gốc đã ổn định trên `dev`.
+
+### 13.1 Tự động thêm thành viên nhóm vào board GROUP
+
+**Thay đổi so với thiết kế ban đầu (mục 7.3)**: bỏ cơ chế "tự bấm Tham gia bảng" cho board GROUP, thay bằng **tự động đồng bộ hai chiều, liên tục** giữa `TeamMember` và `BoardMember` của mọi board GROUP thuộc Team đó.
+
+**Các điểm kích hoạt đồng bộ (đã xác nhận với người dùng)**:
+
+| Sự kiện | Hành động cần làm |
+|---|---|
+| Tạo board mới với `visibility = GROUP` | Tự động tạo `BoardMember` (role `MEMBER`) cho **mọi** `TeamMember` hiện có của Team đó, trừ người tạo board (đã có `ADMIN` sẵn) |
+| Đổi visibility board **sang** GROUP (#22) | Giống hệt trên — tự thêm mọi TeamMember hiện có làm BoardMember (không đụng tới người đã là BoardMember từ trước, không hạ role của họ) |
+| Có người **mới vào Team** (#16, chấp nhận lời mời) | Tự động thêm người đó làm `BoardMember` (role `MEMBER`) vào **mọi board GROUP** hiện có của Team |
+| Có người **bị loại khỏi Team** (#17) | Tự động xóa `BoardMember` của người đó khỏi **mọi board GROUP** của Team (đề xuất, đã thống nhất để nhất quán logic — nếu rời nhóm mà vẫn giữ quyền trên board của nhóm thì vô lý) |
+| Đổi visibility board **khỏi** GROUP (sang PRIVATE/PUBLIC) | **Không** tự động xóa BoardMember đã có — giữ nguyên, tránh trải nghiệm bị tước quyền đột ngột |
+
+**Về nút "Tham gia bảng" (#25) cho GROUP**: không còn cần thiết nữa vì đã tự động — cân nhắc **ẩn nút này** khi `visibility = GROUP` (vì bấm vào cũng không còn tác dụng gì, người dùng đã có sẵn trong BoardMember rồi). Nút "Tham gia bảng" **vẫn giữ nguyên** cho `PUBLIC` (đúng thiết kế cũ, không đổi).
+
+**Việc cần làm khi code**:
+- Thêm method `syncBoardMembersOnGroupVisibility(Board board)` trong `BoardService`/`BoardPermissionService` — gọi khi tạo board hoặc đổi visibility sang GROUP
+- Sửa `TeamMemberServiceImpl` (nơi xử lý accept invitation #16 và xóa thành viên #17) — gọi thêm logic đồng bộ board GROUP tương ứng
+- Cân nhắc tách riêng 1 method dùng chung, ví dụ `BoardMemberSyncService`, để tránh lặp code giữa nhiều nơi gọi tới (tạo board, đổi visibility, join team, leave team)
+
+### 13.2 Kéo-thả (Drag & Drop) thay cho nhập số thủ công — #30, #33, #34
+
+**Thư viện bắt buộc dùng**: jQuery UI Draggable/Sortable (`https://jqueryui.com/draggable/`, giáo viên chỉ định cụ thể link này).
+
+**Phạm vi áp dụng (đã xác nhận với người dùng)**:
+- **#30** (TaskList trong Board): kéo-thả để đổi thứ tự các cột
+- **#33** (Card trong cùng TaskList): kéo-thả để đổi thứ tự thẻ
+- **#34** (Card sang TaskList khác): **gộp chung vào cùng 1 thao tác kéo-thả với #33** — kéo thẻ từ cột này thả sang cột khác, đúng kiểu Trello thật. **Bỏ UI dropdown chọn TaskList đích + dropdown vị trí đã làm trước đó** (không dùng nữa).
+
+**⚠️ Vấn đề accessibility cần xử lý (liên quan trực tiếp tới phản hồi mục 13.3 — AA)**: jQuery UI Sortable/Draggable **không hỗ trợ bàn phím** (xác nhận qua bug ticket chính thức #9633 của jQuery UI, mở từ nhiều năm, chưa fix). Nếu chỉ dùng kéo-thả thuần, người dùng chỉ dùng bàn phím hoặc trình đọc màn hình sẽ **không thể** đổi vị trí TaskList/Card — vi phạm ngược lại chính yêu cầu accessibility.
+
+**Giải pháp đã chốt**: **giữ song song cả 2 phương án**, không xóa hẳn ô nhập số thủ công đã làm:
+- Kéo-thả (jQuery UI) — phương án chính, trải nghiệm tốt cho chuột/cảm ứng
+- Ô nhập số thủ công đã có sẵn (từ thiết kế gốc #30, #33, #34) — **giữ lại làm fallback cho bàn phím**, đặt trong modal chi tiết Card / menu 3 chấm của TaskList như hiện tại, không xóa code cũ
+
+**Về mặt kỹ thuật**:
+- Backend **không cần đổi gì** — endpoint hiện có (`/task-list/{id}/reorder` tương tự nếu có, `/card/{cardId}/reorder`, `/card/{cardId}/move`) vẫn dùng chung công thức `(position_trước + position_sau) / 2` ở mục 8, chỉ khác nguồn gốc giá trị `newPosition` đến từ đâu
+- **Bắt buộc chuyển sang gọi AJAX (`fetch`)** thay vì submit form thường khi kéo-thả — nếu vẫn submit theo kiểu POST-redirect-reload cũ, mỗi lần thả sẽ load lại toàn trang, trải nghiệm kéo-thả bị giật/không mượt. Sau khi kéo-thả xong, chỉ cần cập nhật lại DOM cục bộ (di chuyển phần tử HTML) mà không cần chờ reload — có thể gọi lại API để đồng bộ `position` thật, nhưng UI nên phản hồi ngay lập tức (optimistic update) rồi rollback nếu API lỗi
+
+### 13.3 Tương phản màu Badge đạt chuẩn WCAG AA
+
+**Yêu cầu**: mọi badge màu trong app phải đạt tỉ lệ tương phản tối thiểu theo WCAG AA — **4.5:1** cho chữ thường, **3:1** cho chữ lớn (≥18pt hoặc ≥14pt in đậm) hoặc thành phần UI (border, icon).
+
+**Phạm vi áp dụng — đã chốt áp dụng đầy đủ (không thu hẹp)**:
+1. **Badge cố định** (màu do code định sẵn, dễ kiểm soát): vai trò (`Quản trị viên`/`Thành viên`/`Quản trị nhóm`), visibility (`PRIVATE`/`GROUP`/`PUBLIC`)
+2. **Badge màu Label tự chọn** (khó hơn — người dùng tự chọn màu qua color picker khi tạo Label, xem mục 6.8): cần thêm ràng buộc để không thể chọn màu vi phạm AA
+
+**Việc cần làm khi code**:
+- **Badge cố định**: rà lại toàn bộ CSS class Bootstrap đang dùng (`bg-success-subtle`, `bg-danger-subtle`...) hoặc màu tùy chỉnh, kiểm tra tỉ lệ tương phản bằng công cụ (ví dụ WebAIM Contrast Checker), chỉnh lại mã màu nếu không đạt — ưu tiên dùng chữ đậm màu tối trên nền màu nhạt (subtle) thay vì chữ trắng trên nền màu tươi, vì kiểu subtle thường dễ đạt AA hơn
+- **Label tự chọn màu**: khi người dùng chọn màu nền qua color picker (mục 6.8 `Label.color`), JS cần **tự tính độ sáng (luminance)** và **tự chọn màu chữ tương phản** (đen hoặc trắng) hiển thị trên badge đó, thay vì cố định 1 màu chữ — công thức tính độ sáng tương đối chuẩn W3C: `L = 0.2126*R + 0.7152*G + 0.0722*B` (R,G,B đã chuẩn hóa 0-1, có gamma correction theo WCAG), nếu `L` cao (nền sáng) → chữ đen, nếu `L` thấp (nền tối) → chữ trắng
+- Không cần chặn người dùng chọn màu nào — chỉ cần đảm bảo màu chữ luôn tương phản đủ với màu nền họ chọn, xử lý tự động phía client (JS) khi render badge Label
