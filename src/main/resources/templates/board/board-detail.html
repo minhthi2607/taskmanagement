@@ -605,6 +605,26 @@
             document.getElementById('addCardTrigger-' + listId).classList.remove('d-none');
             document.getElementById('addCardForm-' + listId).classList.add('d-none');
         }
+
+        // Story #35: Khôi phục lại mô tả gốc khi đóng modal chi tiết Card
+        // mà không bấm Lưu, tránh hiển thị sai nội dung mô tả ở lần mở kế tiếp.
+        document.querySelectorAll('[id^="cardDetailModal-"]').forEach(function (modalEl) {
+            let originalDescription = '';
+
+            modalEl.addEventListener('show.bs.modal', function () {
+                const textarea = modalEl.querySelector('textarea[name="description"]');
+                if (textarea) {
+                    originalDescription = textarea.value;
+                }
+            });
+
+            modalEl.addEventListener('hidden.bs.modal', function () {
+                const textarea = modalEl.querySelector('textarea[name="description"]');
+                if (textarea) {
+                    textarea.value = originalDescription;
+                }
+            });
+        });
     </script>
 </th:block>
 
