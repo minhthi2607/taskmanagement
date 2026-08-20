@@ -223,7 +223,7 @@
                     </div>
                     
                     <!-- Cards List Container (Story Card #32/#35, kéo-thả #33/#34) -->
-                    <div class="card-body card-list p-2 d-flex flex-column gap-2" th:data-tasklist-id="${list.id}" style="max-height: 480px; overflow-y: auto;">
+                    <div class="card-body card-list p-2 d-flex flex-column gap-2" th:data-tasklist-id="${list.id}" th:data-tasklist-name="${list.name}" style="max-height: 480px; overflow-y: auto;">
                         <div th:if="${#lists.isEmpty(list.cards)}" class="text-center py-4 text-muted bg-white rounded border border-dashed border-2">
                             <i class="bi bi-card-checklist d-block mb-1 text-secondary opacity-50 fs-4"></i>
                             <span class="small">Chưa có thẻ nào</span>
@@ -628,6 +628,38 @@
                 if (textarea) {
                     textarea.value = originalDescription;
                 }
+            });
+        });
+
+        // Story #33/#34: Dropdown "Di chuyển sang danh sách khác" được Thymeleaf render 1 lần
+        // lúc tải trang nên bị stale sau khi kéo-thả Card bằng AJAX (không F5). Mỗi lần mở modal,
+        // đọc lại danh sách TaskList thật từ DOM (.card-list) và TaskList hiện tại của Card
+        // (dựa trên card đang nằm trong .card-list nào tại thời điểm này) để sinh lại option mới.
+        document.querySelectorAll('[id^="cardDetailModal-"]').forEach(function (modalEl) {
+            modalEl.addEventListener('show.bs.modal', function () {
+                var cardId = modalEl.id.replace('cardDetailModal-', '');
+                var $currentCardEl = $('[data-card-id="' + cardId + '"]');
+                var $select = $(modalEl).find('select[name="targetTaskListId"]');
+                if (!$currentCardEl.length || !$select.length) {
+                    return;
+                }
+
+                var currentTaskListId = String($currentCardEl.closest('.card-list').data('tasklist-id'));
+
+                // Giữ lại option rỗng/placeholder đầu tiên (nếu có), xóa hết option còn lại
+                $select.find('option').filter(function () {
+                    return this.value !== '';
+                }).remove();
+
+                $(".card-list").each(function () {
+                    var taskListId = String($(this).data('tasklist-id'));
+                    if (taskListId === currentTaskListId) {
+                        return;
+                    }
+                    $select.append(
+                        $('<option></option>').attr('value', taskListId).text($(this).data('tasklist-name'))
+                    );
+                });
             });
         });
 
