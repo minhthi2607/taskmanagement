@@ -639,6 +639,10 @@
             const canEdit = [[${canEditBoard}]];
             const $container = $('#task-list-sortable-container');
 
+            // Đọc CSRF token và header name từ meta tag (phục vụ Spring Security CSRF)
+            const csrfToken = $('meta[name="_csrf"]').attr('content');
+            const csrfHeader = $('meta[name="_csrf_header"]').attr('content');
+
             if ($container.length && canEdit) {
                 $container.sortable({
                     items: '> .task-list-column',
@@ -666,11 +670,17 @@
                             $(this).data('list-position', newPosition);
                             $(this).find('.badge-position-display').text('#' + newPosition);
 
+                            // Đóng gói headers truyền CSRF + XMLHttpRequest
+                            const ajaxHeaders = { 'X-Requested-With': 'XMLHttpRequest' };
+                            if (csrfHeader && csrfToken) {
+                                ajaxHeaders[csrfHeader] = csrfToken;
+                            }
+
                             // Gửi AJAX POST cập nhật vị trí ngầm (optimistic update)
                             $.ajax({
                                 url: '/task-list/' + listId + '/update-position',
                                 type: 'POST',
-                                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                                headers: ajaxHeaders,
                                 data: { position: newPosition },
                                 error: function (xhr, status, error) {
                                     console.error('Lỗi khi cập nhật vị trí danh sách ID ' + listId + ':', error);
