@@ -80,16 +80,24 @@ public class TaskListController {
     }
 
     /**
-     * Story #30: Đổi vị trí TaskList
+     * Story #30: Đổi vị trí TaskList (Hỗ trợ cả AJAX kéo-thả và Form submit thủ công)
      */
     @PostMapping("/task-list/{id}/update-position")
-    public String updateTaskListPosition(
+    @ResponseBody
+    public Object updateTaskListPosition(
             @PathVariable("id") Long taskListId,
             @RequestParam("position") Integer position,
             @AuthenticationPrincipal UserPrincipal principal,
+            @RequestHeader(value = "X-Requested-With", required = false) String requestedWith,
             RedirectAttributes redirectAttributes
     ) {
+        boolean isAjax = "XMLHttpRequest".equalsIgnoreCase(requestedWith);
+
         if (principal == null || principal.getUser() == null) {
+            if (isAjax) {
+                return org.springframework.http.ResponseEntity.status(401)
+                        .body(java.util.Map.of("success", false, "message", "Bạn cần đăng nhập!"));
+            }
             redirectAttributes.addFlashAttribute("errorMessage", "Bạn cần đăng nhập để thực hiện thao tác này!");
             return "redirect:/auth/login";
         }
@@ -99,8 +107,16 @@ public class TaskListController {
             TaskList taskList = taskListService.getTaskListById(taskListId);
             boardId = taskList.getBoardId();
             taskListService.updateTaskListPosition(taskListId, position, principal.getUser());
+            if (isAjax) {
+                return org.springframework.http.ResponseEntity.ok(
+                        java.util.Map.of("success", true, "message", "Cập nhật vị trí danh sách thành công!", "position", position));
+            }
             redirectAttributes.addFlashAttribute("successMessage", "Cập nhật vị trí danh sách thành công!");
         } catch (Exception e) {
+            if (isAjax) {
+                return org.springframework.http.ResponseEntity.badRequest()
+                        .body(java.util.Map.of("success", false, "message", e.getMessage()));
+            }
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         }
 
