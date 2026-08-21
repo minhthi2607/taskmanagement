@@ -484,3 +484,129 @@ Sprint 2 đã merge và test xong (xem lịch sử ở các mục trên). Sau kh
 - **Badge cố định**: rà lại toàn bộ CSS class Bootstrap đang dùng (`bg-success-subtle`, `bg-danger-subtle`...) hoặc màu tùy chỉnh, kiểm tra tỉ lệ tương phản bằng công cụ (ví dụ WebAIM Contrast Checker), chỉnh lại mã màu nếu không đạt — ưu tiên dùng chữ đậm màu tối trên nền màu nhạt (subtle) thay vì chữ trắng trên nền màu tươi, vì kiểu subtle thường dễ đạt AA hơn
 - **Label tự chọn màu**: khi người dùng chọn màu nền qua color picker (mục 6.8 `Label.color`), JS cần **tự tính độ sáng (luminance)** và **tự chọn màu chữ tương phản** (đen hoặc trắng) hiển thị trên badge đó, thay vì cố định 1 màu chữ — công thức tính độ sáng tương đối chuẩn W3C: `L = 0.2126*R + 0.7152*G + 0.0722*B` (R,G,B đã chuẩn hóa 0-1, có gamma correction theo WCAG), nếu `L` cao (nền sáng) → chữ đen, nếu `L` thấp (nền tối) → chữ trắng
 - Không cần chặn người dùng chọn màu nào — chỉ cần đảm bảo màu chữ luôn tương phản đủ với màu nền họ chọn, xử lý tự động phía client (JS) khi render badge Label
+
+## 14. Sprint 3 — Đính kèm, Nhãn, Tìm kiếm, Thông báo, Bình luận đầy đủ, Nhật ký thời gian
+
+Sprint 3 build tiếp trên nền Card đã hoàn thiện ở Sprint 2. Nguồn story: `sprint3.txt` (#36-55). Team lần này còn **4 người**: Thi (lead), Khuyên, Thành, Đào — Hướng không tham gia sprint này.
+
+### 14.1 Entity mới cần tạo
+
+#### Notification — thông báo trong ứng dụng [MỚI]
+
+| Field | Kiểu | Ghi chú |
+|---|---|---|
+| id | Long | PK |
+| userId | Long (FK → User) | người **nhận** thông báo |
+| type | Enum `NotificationType` | xem danh sách giá trị bên dưới |
+| content | String | nội dung đã dựng sẵn (server tự build câu hoàn chỉnh lúc tạo, KHÔNG dựng lại ở client — đúng convention không có REST API/client-templating của dự án, xem mục 2) |
+| link | String (nullable) | URL điều hướng khi bấm vào thông báo (VD: `/board/12` hoặc `/card/45`) |
+| isRead | Boolean | mặc định `false` |
+| createdAt | LocalDateTime | |
+
+`NotificationType` (enum mới, đặt trong `enums/`): `CARD_ADDED` (#44), `CARD_MOVED` (#45), `CARD_MEMBER_ASSIGNED` (#46), `BOARD_MEMBER_ADDED` (#47), `TEAM_MEMBER_ADDED` (#48), `CARD_DUE_REMINDER` (#53), `CARD_WATCH_ACTIVITY` (#54).
+
+> ⚠️ Lưu ý quan trọng khi code: `content` build **1 lần lúc tạo Notification**, lưu thẳng vào DB dạng chuỗi hoàn chỉnh (ví dụ: `"minh thi đã thêm 'Sửa lỗi login' vào 'To Do'"`). Không lưu các mảnh dữ liệu rời rồi ráp câu lúc hiển thị — vì nếu sau này Card/Board bị đổi tên hoặc xóa, thông báo cũ vẫn phải giữ nguyên nội dung lịch sử đúng như lúc phát sinh.
+
+#### CardWatcher — theo dõi thẻ (#54) [MỚI]
+
+| Field | Kiểu | Ghi chú |
+|---|---|---|
+| id | Long | PK |
+| cardId | Long (FK → Card) | |
+| userId | Long (FK → User) | |
+| createdAt | LocalDateTime | |
+
+Ràng buộc unique `(cardId, userId)` — 1 người chỉ theo dõi 1 thẻ 1 lần (giống pattern `uk_board_user` đã dùng ở `BoardMember`).
+
+#### CardTimeLog — nhật ký thời gian đã dùng (#55) [MỚI]
+
+| Field | Kiểu | Ghi chú |
+|---|---|---|
+| id | Long | PK |
+| cardId | Long (FK → Card) | |
+| userId | Long (FK → User) | người log |
+| hours | BigDecimal | số giờ đã dùng (cho phép số lẻ, ví dụ 1.5 giờ) |
+| note | String (nullable) | ghi chú ngắn về công việc đã làm |
+| loggedAt | LocalDateTime | ngày/giờ công việc diễn ra (khác `createdAt` là lúc **tạo bản ghi**) |
+| createdAt | LocalDateTime | |
+
+**Quyết định thiết kế**: #55 là *time logging* (nhiều lần ghi nhận thời gian thực tế), không phải 1 field ước lượng duy nhất trên `Card` — nên tách bảng riêng `CardTimeLog`, có thể có nhiều bản ghi cho 1 Card. Tổng giờ hiển thị trên Card = `SUM(hours)` tính động qua query, không lưu field tổng trên `Card` (tránh dữ liệu trùng lặp/lệch pha).
+
+### 14.2 Cập nhật Entity `Card` (thêm field cho #53)
+
+| Field mới | Kiểu | Ghi chú |
+|---|---|---|
+| dueDate | LocalDateTime (nullable) | hạn chót của thẻ |
+| reminderMinutes | Integer (nullable) | số phút nhắc **trước** `dueDate`. `null` = mặc định nhắc đúng lúc `dueDate` (theo đúng spec #53: *"nếu không chọn nhắc trước thì mặc định đến due date sẽ gửi"*) |
+| reminderSentAt | LocalDateTime (nullable) | thời điểm đã gửi thông báo nhắc, dùng để **chống gửi trùng** khi Scheduler quét lại nhiều lần. Khi người dùng sửa `dueDate`/`reminderMinutes`, **phải reset field này về `null`** để nhắc lại đúng theo mốc mới |
+
+### 14.3 Cơ chế quét & gửi nhắc việc (#53)
+
+Dùng Spring `@Scheduled` (đã có sẵn `spring-boot-starter` support, không cần thêm dependency) — 1 job chạy định kỳ (đề xuất mỗi 1 phút) quét các Card có:
+```
+dueDate IS NOT NULL
+AND reminderSentAt IS NULL
+AND NOW() >= (dueDate - reminderMinutes phút, hoặc dueDate nếu reminderMinutes NULL)
+```
+Với mỗi Card khớp điều kiện: tạo `Notification` (type `CARD_DUE_REMINDER`) cho **người tạo thẻ** và **mọi CardMember** của thẻ đó (đúng yêu cầu #53: *"gửi thông báo tới người tham gia thẻ và người tạo ra thẻ đó"*), rồi set `reminderSentAt = NOW()` để không gửi lại lần quét sau.
+
+### 14.4 Cơ chế "theo dõi thẻ" (#54)
+
+Khi có bất kỳ hành động nào xảy ra trên 1 Card (di chuyển #34, thêm thành viên #37, tới due date #53, xóa #35-adjacent, sửa nội dung #35, được tag tên trong comment #49), Service tương ứng cần:
+1. Query danh sách `CardWatcher` của Card đó
+2. Tạo `Notification` (type `CARD_WATCH_ACTIVITY`) cho từng người theo dõi (trừ chính người vừa thực hiện hành động, tránh tự thông báo cho mình)
+
+> Vì đây là hành vi "móc" (hook) vào **nhiều Service khác nhau** đã tồn tại (CardServiceImpl, BoardMemberServiceImpl...), đề xuất tạo 1 method dùng chung, ví dụ `NotificationService.notifyCardWatchers(Long cardId, String activityDescription, Long actorUserId)`, để mọi nơi cần bắn thông báo watch chỉ cần gọi 1 dòng, tránh lặp code.
+
+### 14.5 Phân nhóm & phân công Sprint 3
+
+Nhóm theo tính liên kết chức năng, tiếp nối đúng domain quen thuộc từ Sprint 2.
+
+#### A. Đính kèm file & Bình luận đầy đủ (Đào)
+- **#36** — Đính kèm file vào thẻ (Entity `CardAttachment` đã có từ Sprint 2, mục 6.11 — chỉ cần Service/Controller/UI). Lưu file local theo đúng quy ước avatar Sprint 1 (`static/uploads/`)
+- **#49** — Bình luận (đã có "thêm" từ Sprint 2 #35, story này bổ sung validate không được để trống)
+- **#50** — Sửa bình luận của chính mình
+- **#51** — Xóa bình luận của chính mình, có popup xác nhận
+- **#52** — Xem danh sách bình luận, sắp xếp thời gian **tăng dần** (cũ → mới) — kiểm tra lại code Sprint 2 hiện tại đang sort thế nào, có thể cần đổi chiều
+
+> Làm sau khi Đào xong việc tồn đọng: #30 (kéo-thả TaskList) và phần Team ở mục 13.1. **[Đã xong — xem lịch sử review PR trong quá trình làm việc]**
+
+#### B. Tìm kiếm/lọc trong Board + Time log (Khuyên)
+- **#38** — Tìm kiếm theo tiêu đề thẻ (gần đúng, kết quả hiện trên board hiện tại)
+- **#39** — Tìm kiếm theo nhãn (chọn nhiều nhãn cùng lúc)
+- **#40** — Tìm kiếm theo thành viên (chọn nhiều thành viên cùng lúc)
+- **#55** — Time log (Entity `CardTimeLog` mới, mục 14.1)
+
+> #38-40 nên gộp chung **1 popup Tìm kiếm** với 3 tab/tiêu chí, theo đúng mô tả gốc ("Menu góc trên tay phải > Tìm kiếm > popup nhiều tiêu chí"), không làm 3 popup riêng biệt.
+
+#### C. Quản lý Nhãn + gán thành viên có tìm kiếm (Thành)
+- **#41** — Gán 1 hoặc nhiều nhãn cho thẻ (Entity `Label`/`CardLabel` đã có từ Sprint 2, mục 6.8-6.9 — chỉ cần Service/Controller/UI)
+- **#42** — Tạo nhãn mới (~7 màu có sẵn)
+- **#43** — Sửa/xóa nhãn (xóa thì gỡ khỏi mọi thẻ đang gán, có popup xác nhận)
+- **#37** — Gán thành viên vào thẻ có ô tìm kiếm (mở rộng CardMember đã có từ #35)
+
+> Lưu ý: mô tả gốc #37 trong `sprint3.txt` có đoạn *"Nhãn sau khi gán hiển thị..."* — đây là lỗi copy-paste từ #41, không áp dụng cho #37, bỏ qua khi code.
+
+#### D. Hệ thống Thông báo — nền tảng (Thi, lead)
+- **#44** — Thông báo khi thêm thẻ mới
+- **#45** — Thông báo khi di chuyển thẻ
+- **#46** — Thông báo khi được gán vào thẻ
+- **#47** — Thông báo khi được thêm vào Board
+- **#48** — Thông báo khi được thêm vào Team
+- Tạo `NotificationService` dùng chung (method `createNotification(...)`) để Khuyên/Thành/Đào gọi khi cần bắn thông báo từ Service của họ (VD: `TaskListServiceImpl`/`CardServiceImpl` gọi khi tạo thẻ; `BoardMemberServiceImpl` gọi khi thêm thành viên...)
+- UI: dropdown chuông thông báo ở header (khung sẵn từ Sprint 1 story #2), sắp xếp mới nhất lên đầu, đánh dấu đã đọc khi bấm vào
+
+### 14.6 Giai đoạn 2 — chỉ làm sau khi mục D (Thông báo) xong
+
+| Story | Phụ thuộc | Người làm |
+|---|---|---|
+| **#53** — Due date + nhắc việc | Cần `NotificationService` | Khuyên (sau khi xong nhóm B) |
+| **#54** — Theo dõi thẻ | Cần `NotificationService` | Thành (sau khi xong nhóm C) |
+
+### 14.7 Lưu ý phụ thuộc & thứ tự triển khai
+
+- Nhóm A, B, C, D **có thể làm song song ngay từ đầu sprint** — không phụ thuộc lẫn nhau
+- Thi nên hoàn thành `NotificationService` (chỉ cần interface + implementation cơ bản, chưa cần đủ UI) **sớm nhất có thể**, đẩy lên nhánh chung để Khuyên/Thành biết trước chữ ký method mà gọi, tránh phải sửa lại nhiều nơi khi API đổi
+- Đào có việc tồn đọng từ Sprint 2 (#30, mục 13.1 phần Team) — ưu tiên xong việc đó trước khi bắt đầu nhóm A. **[Đã xong]**
+
+> **Cập nhật tiến độ (sau khi hoàn thành mục 13)**: Toàn bộ việc tồn đọng của mục 13.1/13.2 (Board, Team, TaskList, Card kéo-thả) đã merge xong vào `dev`, bao gồm cả 1 vòng phát hiện và sửa bug quan trọng (mất quyền ADMIN Board khi rời Team, do 2 người code trùng lặp logic + lỗi thiếu `final` gây NullPointerException — đã sửa, có unit test bảo vệ + xác nhận bằng test tay). Sprint 3 (mục 14 ở trên) **có thể bắt đầu ngay**, chưa ai bắt tay code tại thời điểm cập nhật tài liệu này.
