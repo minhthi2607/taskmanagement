@@ -62,7 +62,7 @@
                 <div class="d-flex align-items-center gap-2">
                     
                     <!-- Nút tham gia bảng (Cho người chưa là thành viên, Story #25) -->
-                    <form th:if="${!isBoardMember}" th:action="@{/board/{id}/join(id=${board.id})}" method="post" class="m-0">
+                    <form th:if="${!isBoardMember and board.visibility.name() == 'PUBLIC'}" th:action="@{/board/{id}/join(id=${board.id})}" method="post" class="m-0">
                         <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 d-flex align-items-center gap-1 shadow-sm">
                             <i class="bi bi-person-plus-fill me-1"></i>
                             <span>Tham gia bảng</span>

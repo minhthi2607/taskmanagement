@@ -13,6 +13,7 @@ import com.project.taskmanagement.repository.TeamRepository;
 import com.project.taskmanagement.repository.UserRepository;
 import com.project.taskmanagement.service.EmailService;
 import com.project.taskmanagement.service.TeamMemberService;
+import com.project.taskmanagement.service.BoardMemberSyncService;
 import com.project.taskmanagement.service.TeamService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,8 +36,7 @@ public class TeamMemberServiceImpl implements TeamMemberService {
     private final InvitationRepository invitationRepository;
     private final TeamService teamService;
     private final EmailService emailService;
-    private final com.project.taskmanagement.repository.BoardRepository boardRepository;
-    private final com.project.taskmanagement.repository.BoardMemberRepository boardMemberRepository;
+    private final BoardMemberSyncService boardMemberSyncService;
 
     @Override
     @Transactional
@@ -128,23 +128,11 @@ public class TeamMemberServiceImpl implements TeamMemberService {
             teamMemberRepository.save(newMember);
         }
 
-        // Tự động thêm vào mọi board GROUP của Team (Mục 13.1)
-        List<com.project.taskmanagement.entity.Board> groupBoards = boardRepository.findByTeamIdAndVisibilityOrderByCreatedAtDesc(
-                invitation.getTeamId(), com.project.taskmanagement.enums.BoardVisibility.GROUP);
-        for (com.project.taskmanagement.entity.Board b : groupBoards) {
-            if (!boardMemberRepository.existsByBoardIdAndUserId(b.getId(), currentUser.getId())) {
-                com.project.taskmanagement.entity.BoardMember bm = com.project.taskmanagement.entity.BoardMember.builder()
-                        .boardId(b.getId())
-                        .userId(currentUser.getId())
-                        .role(Role.MEMBER)
-                        .joinedAt(LocalDateTime.now())
-                        .build();
-                boardMemberRepository.save(bm);
-            }
-        }
-
         invitation.setStatus(InvitationStatus.ACCEPTED);
         invitationRepository.save(invitation);
+        if (invitation.getTeamId() != null) {
+            boardMemberSyncService.addMemberToAllGroupBoardsOfTeam(invitation.getTeamId(), currentUser.getId());
+        }
     }
 
     @Override
@@ -171,13 +159,7 @@ public class TeamMemberServiceImpl implements TeamMemberService {
                 .orElseThrow(() -> new ResourceNotFoundException("Thành viên không thuộc nhóm này!"));
 
         teamMemberRepository.delete(member);
-
-        // Tự động xóa khỏi mọi board GROUP của Team (Mục 13.1)
-        List<com.project.taskmanagement.entity.Board> groupBoards = boardRepository.findByTeamIdAndVisibilityOrderByCreatedAtDesc(
-                teamId, com.project.taskmanagement.enums.BoardVisibility.GROUP);
-        for (com.project.taskmanagement.entity.Board b : groupBoards) {
-            boardMemberRepository.deleteByBoardIdAndUserId(b.getId(), targetUserId);
-        }
+        boardMemberSyncService.removeMemberFromAllGroupBoardsOfTeam(teamId, targetUserId);
     }
 
     @Override
