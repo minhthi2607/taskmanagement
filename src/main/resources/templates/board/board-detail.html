@@ -226,16 +226,17 @@
                         </div>
                     </div>
                     
-                    <!-- Cards List Container (Story Card #32/#35) -->
-                    <div class="card-body p-2 d-flex flex-column gap-2" style="max-height: 480px; overflow-y: auto;">
+                    <!-- Cards List Container (Story Card #32/#35, kéo-thả #33/#34) -->
+                    <div class="card-body card-list p-2 d-flex flex-column gap-2" th:data-tasklist-id="${list.id}" th:data-tasklist-name="${list.name}" style="max-height: 480px; overflow-y: auto;">
                         <div th:if="${#lists.isEmpty(list.cards)}" class="text-center py-4 text-muted bg-white rounded border border-dashed border-2">
                             <i class="bi bi-card-checklist d-block mb-1 text-secondary opacity-50 fs-4"></i>
                             <span class="small">Chưa có thẻ nào</span>
                         </div>
 
-                        <!-- Loop cards khi có data: bấm vào mở modal chi tiết (#35) -->
+                        <!-- Loop cards khi có data: bấm vào mở modal chi tiết (#35), kéo-thả đổi vị trí/chuyển danh sách (#33/#34) -->
                         <div th:each="card : ${list.cards}" class="card border shadow-xs p-2 rounded-2 bg-white hover-shadow transition-all"
-                             style="cursor: pointer;" data-bs-toggle="modal" th:data-bs-target="'#cardDetailModal-' + ${card.id}">
+                             style="cursor: pointer;" data-bs-toggle="modal" th:data-bs-target="'#cardDetailModal-' + ${card.id}"
+                             th:data-card-id="${card.id}" th:data-position="${card.position}">
                             <span class="fw-semibold text-dark fs-6" th:text="${card.title}">Tiêu đề thẻ</span>
                         </div>
                     </div>
@@ -597,7 +598,7 @@
 </div>
 
 <th:block layout:fragment="scripts">
-    <!-- jQuery & jQuery UI (Mục 13.2: Kéo thả TaskList #30) -->
+    <!-- jQuery + jQuery UI (chỉ dùng ở trang này, cho kéo-thả TaskList #30 và Card #33/#34) -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
 
@@ -633,6 +634,117 @@
                 }
             });
         });
+
+        // Story #33/#34: Dropdown "Di chuyển sang danh sách khác" được Thymeleaf render 1 lần
+        // lúc tải trang nên bị stale sau khi kéo-thả Card bằng AJAX (không F5). Mỗi lần mở modal,
+        // đọc lại danh sách TaskList thật từ DOM (.card-list) và TaskList hiện tại của Card
+        // (dựa trên card đang nằm trong .card-list nào tại thời điểm này) để sinh lại option mới.
+        document.querySelectorAll('[id^="cardDetailModal-"]').forEach(function (modalEl) {
+            modalEl.addEventListener('show.bs.modal', function () {
+                var cardId = modalEl.id.replace('cardDetailModal-', '');
+                var $currentCardEl = $('[data-card-id="' + cardId + '"]');
+                var $select = $(modalEl).find('select[name="targetTaskListId"]');
+                if (!$currentCardEl.length || !$select.length) {
+                    return;
+                }
+
+                var currentTaskListId = String($currentCardEl.closest('.card-list').data('tasklist-id'));
+
+                // Giữ lại option rỗng/placeholder đầu tiên (nếu có), xóa hết option còn lại
+                $select.find('option').filter(function () {
+                    return this.value !== '';
+                }).remove();
+
+                $(".card-list").each(function () {
+                    var taskListId = String($(this).data('tasklist-id'));
+                    if (taskListId === currentTaskListId) {
+                        return;
+                    }
+                    $select.append(
+                        $('<option></option>').attr('value', taskListId).text($(this).data('tasklist-name'))
+                    );
+                });
+            });
+        });
+
+        // Story #33/#34: Kéo-thả Card (đổi vị trí trong cùng TaskList / chuyển sang TaskList khác)
+        // gộp chung 1 thao tác duy nhất (jQuery UI Sortable) - xem GEMINI.md mục 13.2.
+        // Ô nhập số thủ công (mục "e"/"f" trong modal chi tiết Card) vẫn giữ nguyên làm fallback bàn phím.
+        var cardDragOriginalTaskListId = null;
+
+        $(".card-list").sortable({
+            connectWith: ".card-list",
+            items: "> [data-card-id]",
+            placeholder: "card-placeholder",
+            tolerance: "pointer",
+            start: function (event, ui) {
+                cardDragOriginalTaskListId = String(ui.item.closest(".card-list").data("tasklist-id"));
+            },
+            stop: function (event, ui) {
+                handleCardDrop(ui.item);
+            }
+        }).disableSelection();
+
+        // CSRF: dự án dùng CSRF mặc định của Spring Security, Thymeleaf tự chèn
+        // input ẩn name="_csrf" vào mọi <form method="post"> đã có sẵn (reorder/move...).
+        // Lấy lại đúng giá trị đó cho fetch() thay vì tự nghĩ cơ chế khác.
+        function getCsrfToken() {
+            var input = document.querySelector('input[name="_csrf"]');
+            return input ? input.value : null;
+        }
+
+        // Công thức position thưa (mục 8): (position_trước + position_sau) / 2
+        function calculateCardPosition($cardEl) {
+            var $prev = $cardEl.prevAll('[data-card-id]').first();
+            var $next = $cardEl.nextAll('[data-card-id]').first();
+            var prevPos = $prev.length ? parseInt($prev.attr('data-position'), 10) : null;
+            var nextPos = $next.length ? parseInt($next.attr('data-position'), 10) : null;
+
+            if (prevPos !== null && nextPos !== null) {
+                return Math.floor((prevPos + nextPos) / 2);
+            }
+            if (prevPos === null && nextPos !== null) {
+                return nextPos > 10 ? (nextPos - 10) : Math.floor(nextPos / 2);
+            }
+            if (prevPos !== null && nextPos === null) {
+                return prevPos + 10;
+            }
+            return 10; // thẻ duy nhất trong danh sách
+        }
+
+        function handleCardDrop($cardEl) {
+            var cardId = $cardEl.attr('data-card-id');
+            var newTaskListId = String($cardEl.closest('.card-list').data('tasklist-id'));
+            var isMove = newTaskListId !== cardDragOriginalTaskListId;
+            var newPosition = calculateCardPosition($cardEl);
+
+            var params = new URLSearchParams();
+            params.set('_csrf', getCsrfToken() || '');
+            params.set('position', newPosition);
+
+            var url;
+            if (isMove) {
+                url = '/card/' + cardId + '/move';
+                params.set('targetTaskListId', newTaskListId);
+            } else {
+                url = '/card/' + cardId + '/reorder';
+            }
+
+            fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: params.toString()
+            }).then(function (response) {
+                if (!response.ok) {
+                    throw new Error('Request thất bại với status ' + response.status);
+                }
+                // Thành công: chỉ cập nhật lại position trong DOM, không reload toàn trang.
+                $cardEl.attr('data-position', newPosition);
+            }).catch(function () {
+                alert('Có lỗi xảy ra khi cập nhật vị trí thẻ. Trang sẽ được tải lại để đồng bộ dữ liệu.');
+                window.location.reload();
+            });
+        }
 
         // Story #30 (Mục 13.2): Kéo-thả TaskList bằng jQuery UI Sortable + AJAX
         $(document).ready(function () {
