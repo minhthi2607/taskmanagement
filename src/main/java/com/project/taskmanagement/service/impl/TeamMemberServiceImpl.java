@@ -13,6 +13,7 @@ import com.project.taskmanagement.repository.TeamRepository;
 import com.project.taskmanagement.repository.UserRepository;
 import com.project.taskmanagement.service.EmailService;
 import com.project.taskmanagement.service.TeamMemberService;
+import com.project.taskmanagement.service.BoardMemberSyncService;
 import com.project.taskmanagement.service.TeamService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,6 +38,7 @@ public class TeamMemberServiceImpl implements TeamMemberService {
     private final EmailService emailService;
     private final com.project.taskmanagement.repository.BoardRepository boardRepository;
     private final com.project.taskmanagement.repository.BoardMemberRepository boardMemberRepository;
+    BoardMemberSyncService boardMemberSyncService;
 
     @Override
     @Transactional
@@ -145,6 +147,9 @@ public class TeamMemberServiceImpl implements TeamMemberService {
 
         invitation.setStatus(InvitationStatus.ACCEPTED);
         invitationRepository.save(invitation);
+        if (invitation.getTeamId() != null) {
+            boardMemberSyncService.addMemberToAllGroupBoardsOfTeam(invitation.getTeamId(), currentUser.getId());
+        }
     }
 
     @Override
@@ -171,6 +176,7 @@ public class TeamMemberServiceImpl implements TeamMemberService {
                 .orElseThrow(() -> new ResourceNotFoundException("Thành viên không thuộc nhóm này!"));
 
         teamMemberRepository.delete(member);
+        boardMemberSyncService.removeMemberFromAllGroupBoardsOfTeam(teamId, targetUserId);
 
         // Tự động xóa khỏi mọi board GROUP của Team (Mục 13.1)
         List<com.project.taskmanagement.entity.Board> groupBoards = boardRepository.findByTeamIdAndVisibilityOrderByCreatedAtDesc(

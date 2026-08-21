@@ -16,6 +16,7 @@ import com.project.taskmanagement.repository.BoardRepository;
 import com.project.taskmanagement.repository.TeamRepository;
 import com.project.taskmanagement.service.BoardPermissionService;
 import com.project.taskmanagement.service.BoardService;
+import com.project.taskmanagement.service.BoardMemberSyncService;
 import com.project.taskmanagement.service.TeamService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
@@ -37,6 +38,7 @@ public class BoardServiceImpl implements BoardService {
     private final TeamService teamService;
     private final BoardMemberRepository boardMemberRepository;
     private final BoardPermissionService boardPermissionService;
+    private final BoardMemberSyncService boardMemberSyncService;
     private final com.project.taskmanagement.repository.TeamMemberRepository teamMemberRepository;
 
     private void syncTeamMembersToGroupBoard(Board board) {
@@ -214,8 +216,9 @@ public class BoardServiceImpl implements BoardService {
 
         boardMemberRepository.save(adminMember);
 
-        syncTeamMembersToGroupBoard(savedBoard);
-
+        if (savedBoard.getVisibility() == BoardVisibility.GROUP) {
+            boardMemberSyncService.syncBoardMembersForGroupBoard(savedBoard);
+        }
         return savedBoard;
     }
 
@@ -234,12 +237,13 @@ public class BoardServiceImpl implements BoardService {
         }
 
         if (dto.getVisibility() != null) {
+            BoardVisibility oldVisibility = board.getVisibility();
             board.setVisibility(dto.getVisibility());
+            if (oldVisibility != BoardVisibility.GROUP && dto.getVisibility() == BoardVisibility.GROUP) {
+                boardMemberSyncService.syncBoardMembersForGroupBoard(board);
+            }
         }
-
-        Board updatedBoard = boardRepository.save(board);
-        syncTeamMembersToGroupBoard(updatedBoard);
-        return updatedBoard;
+        return boardRepository.save(board);
     }
 
     /**
@@ -272,11 +276,13 @@ public class BoardServiceImpl implements BoardService {
         if (visibility == null) {
             throw new IllegalArgumentException("Quyền truy cập bảng không được để trống!");
         }
-
+        BoardVisibility oldVisibility = board.getVisibility();
         board.setVisibility(visibility);
-        Board updatedBoard = boardRepository.save(board);
-        syncTeamMembersToGroupBoard(updatedBoard);
-        return updatedBoard;
+        Board savedBoard = boardRepository.save(board);
+        if (oldVisibility != BoardVisibility.GROUP && visibility == BoardVisibility.GROUP) {
+            boardMemberSyncService.syncBoardMembersForGroupBoard(savedBoard);
+        }
+        return savedBoard;
     }
 
     /**

@@ -46,6 +46,9 @@ class BoardServiceImplTest {
     private BoardPermissionService boardPermissionService;
 
     @Mock
+    private BoardMemberSyncService boardMemberSyncService;
+
+    @Mock
     private com.project.taskmanagement.repository.TeamMemberRepository teamMemberRepository;
 
     @InjectMocks
