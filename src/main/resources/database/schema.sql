@@ -6,6 +6,9 @@ USE `taskmanagement_db`;
 
 -- Xóa bảng cũ nếu tồn tại (theo thứ tự ngược lại của ràng buộc khóa ngoại)
 DROP TABLE IF EXISTS `invitations`;
+DROP TABLE IF EXISTS `card_time_logs`;
+DROP TABLE IF EXISTS `card_watchers`;
+DROP TABLE IF EXISTS `notifications`;
 DROP TABLE IF EXISTS `card_comments`;
 DROP TABLE IF EXISTS `card_attachments`;
 DROP TABLE IF EXISTS `card_members`;
@@ -184,6 +187,56 @@ CREATE TABLE `invitations` (
         (`team_id` IS NULL AND `board_id` IS NOT NULL)
     )
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ========================================================
+-- SPRINT 3 — Thông báo, theo dõi thẻ, nhật ký thời gian, due date (GEMINI.md mục 14)
+-- ========================================================
+
+-- 14. Bảng notifications (Thông báo trong ứng dụng) [Sprint 3 - MỚI]
+-- GEMINI.md mục 14.1
+CREATE TABLE `notifications` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `user_id` BIGINT NOT NULL,
+    `type` ENUM('CARD_ADDED', 'CARD_MOVED', 'CARD_MEMBER_ASSIGNED', 'BOARD_MEMBER_ADDED', 'TEAM_MEMBER_ADDED', 'CARD_DUE_REMINDER', 'CARD_WATCH_ACTIVITY') NOT NULL,
+    `content` TEXT NOT NULL,
+    `link` VARCHAR(255) NULL,
+    `is_read` TINYINT(1) NOT NULL DEFAULT 0,
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT `fk_notifications_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 15. Bảng card_watchers (Theo dõi thẻ - #54) [Sprint 3 - MỚI]
+-- GEMINI.md mục 14.1
+CREATE TABLE `card_watchers` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `card_id` BIGINT NOT NULL,
+    `user_id` BIGINT NOT NULL,
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT `uk_card_watcher_user` UNIQUE (`card_id`, `user_id`),
+    CONSTRAINT `fk_card_watchers_card` FOREIGN KEY (`card_id`) REFERENCES `cards` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_card_watchers_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 16. Bảng card_time_logs (Nhật ký thời gian đã dùng - #55) [Sprint 3 - MỚI]
+-- GEMINI.md mục 14.1
+CREATE TABLE `card_time_logs` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `card_id` BIGINT NOT NULL,
+    `user_id` BIGINT NOT NULL,
+    `hours` DECIMAL(5, 2) NOT NULL,
+    `note` VARCHAR(255) NULL,
+    `logged_at` DATETIME NOT NULL,
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT `fk_card_time_logs_card` FOREIGN KEY (`card_id`) REFERENCES `cards` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_card_time_logs_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 17. Bảng cards — bổ sung cột due date + nhắc việc (#53) [Sprint 3]
+-- GEMINI.md mục 14.2
+ALTER TABLE `cards`
+    ADD COLUMN `due_date` DATETIME NULL,
+    ADD COLUMN `reminder_minutes` INT NULL,
+    ADD COLUMN `reminder_sent_at` DATETIME NULL;
 
 -- ========================================================
 -- DỮ LIỆU KHỞI TẠO MẶC ĐỊNH (DEFAULT SEED DATA)

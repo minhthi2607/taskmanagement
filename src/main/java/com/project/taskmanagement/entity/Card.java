@@ -46,6 +46,15 @@ public class Card {
 
     private LocalDateTime updatedAt;
 
+    @Column(name = "due_date")
+    private LocalDateTime dueDate;
+
+    @Column(name = "reminder_minutes")
+    private Integer reminderMinutes;
+
+    @Column(name = "reminder_sent_at")
+    private LocalDateTime reminderSentAt;
+
     @Builder.Default
     @OneToMany(mappedBy = "card", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CardMember> members = new ArrayList<>();
