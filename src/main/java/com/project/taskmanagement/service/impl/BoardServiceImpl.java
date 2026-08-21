@@ -37,6 +37,25 @@ public class BoardServiceImpl implements BoardService {
     private final TeamService teamService;
     private final BoardMemberRepository boardMemberRepository;
     private final BoardPermissionService boardPermissionService;
+    private final com.project.taskmanagement.repository.TeamMemberRepository teamMemberRepository;
+
+    private void syncTeamMembersToGroupBoard(Board board) {
+        if (board == null || board.getVisibility() != BoardVisibility.GROUP || board.getTeamId() == null) {
+            return;
+        }
+        List<com.project.taskmanagement.entity.TeamMember> teamMembers = teamMemberRepository.findByTeamId(board.getTeamId());
+        for (com.project.taskmanagement.entity.TeamMember tm : teamMembers) {
+            if (tm.getUserId() != null && !boardMemberRepository.existsByBoardIdAndUserId(board.getId(), tm.getUserId())) {
+                BoardMember bm = BoardMember.builder()
+                        .boardId(board.getId())
+                        .userId(tm.getUserId())
+                        .role(Role.MEMBER)
+                        .joinedAt(LocalDateTime.now())
+                        .build();
+                boardMemberRepository.save(bm);
+            }
+        }
+    }
 
     @Override
     @Transactional(readOnly = true)
@@ -195,6 +214,8 @@ public class BoardServiceImpl implements BoardService {
 
         boardMemberRepository.save(adminMember);
 
+        syncTeamMembersToGroupBoard(savedBoard);
+
         return savedBoard;
     }
 
@@ -216,7 +237,9 @@ public class BoardServiceImpl implements BoardService {
             board.setVisibility(dto.getVisibility());
         }
 
-        return boardRepository.save(board);
+        Board updatedBoard = boardRepository.save(board);
+        syncTeamMembersToGroupBoard(updatedBoard);
+        return updatedBoard;
     }
 
     /**
@@ -251,7 +274,9 @@ public class BoardServiceImpl implements BoardService {
         }
 
         board.setVisibility(visibility);
-        return boardRepository.save(board);
+        Board updatedBoard = boardRepository.save(board);
+        syncTeamMembersToGroupBoard(updatedBoard);
+        return updatedBoard;
     }
 
     /**

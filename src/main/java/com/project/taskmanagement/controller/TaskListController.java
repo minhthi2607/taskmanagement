@@ -6,11 +6,14 @@ import com.project.taskmanagement.entity.TaskList;
 import com.project.taskmanagement.service.TaskListService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import java.util.Map;
 
 @Controller
 @RequiredArgsConstructor
@@ -80,10 +83,34 @@ public class TaskListController {
     }
 
     /**
-     * Story #30: Đổi vị trí TaskList
+     * Story #30: Đổi vị trí TaskList (Dành riêng cho AJAX kéo-thả)
+     */
+    @PostMapping(value = "/task-list/{id}/update-position", headers = "X-Requested-With=XMLHttpRequest")
+    public ResponseEntity<?> updateTaskListPositionAjax(
+            @PathVariable("id") Long taskListId,
+            @RequestParam("position") Integer position,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        if (principal == null || principal.getUser() == null) {
+            return ResponseEntity.status(401)
+                    .body(Map.of("success", false, "message", "Bạn cần đăng nhập!"));
+        }
+
+        try {
+            taskListService.updateTaskListPosition(taskListId, position, principal.getUser());
+            return ResponseEntity.ok(
+                    Map.of("success", true, "message", "Cập nhật vị trí danh sách thành công!", "position", position));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("success", false, "message", e.getMessage()));
+        }
+    }
+
+    /**
+     * Story #30: Đổi vị trí TaskList (Dành cho Form submit nhập số thủ công)
      */
     @PostMapping("/task-list/{id}/update-position")
-    public String updateTaskListPosition(
+    public String updateTaskListPositionForm(
             @PathVariable("id") Long taskListId,
             @RequestParam("position") Integer position,
             @AuthenticationPrincipal UserPrincipal principal,
