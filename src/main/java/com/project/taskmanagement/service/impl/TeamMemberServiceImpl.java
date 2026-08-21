@@ -36,9 +36,7 @@ public class TeamMemberServiceImpl implements TeamMemberService {
     private final InvitationRepository invitationRepository;
     private final TeamService teamService;
     private final EmailService emailService;
-    private final com.project.taskmanagement.repository.BoardRepository boardRepository;
-    private final com.project.taskmanagement.repository.BoardMemberRepository boardMemberRepository;
-    BoardMemberSyncService boardMemberSyncService;
+    private final BoardMemberSyncService boardMemberSyncService;
 
     @Override
     @Transactional
@@ -130,21 +128,6 @@ public class TeamMemberServiceImpl implements TeamMemberService {
             teamMemberRepository.save(newMember);
         }
 
-        // Tự động thêm vào mọi board GROUP của Team (Mục 13.1)
-        List<com.project.taskmanagement.entity.Board> groupBoards = boardRepository.findByTeamIdAndVisibilityOrderByCreatedAtDesc(
-                invitation.getTeamId(), com.project.taskmanagement.enums.BoardVisibility.GROUP);
-        for (com.project.taskmanagement.entity.Board b : groupBoards) {
-            if (!boardMemberRepository.existsByBoardIdAndUserId(b.getId(), currentUser.getId())) {
-                com.project.taskmanagement.entity.BoardMember bm = com.project.taskmanagement.entity.BoardMember.builder()
-                        .boardId(b.getId())
-                        .userId(currentUser.getId())
-                        .role(Role.MEMBER)
-                        .joinedAt(LocalDateTime.now())
-                        .build();
-                boardMemberRepository.save(bm);
-            }
-        }
-
         invitation.setStatus(InvitationStatus.ACCEPTED);
         invitationRepository.save(invitation);
         if (invitation.getTeamId() != null) {
@@ -177,13 +160,6 @@ public class TeamMemberServiceImpl implements TeamMemberService {
 
         teamMemberRepository.delete(member);
         boardMemberSyncService.removeMemberFromAllGroupBoardsOfTeam(teamId, targetUserId);
-
-        // Tự động xóa khỏi mọi board GROUP của Team (Mục 13.1)
-        List<com.project.taskmanagement.entity.Board> groupBoards = boardRepository.findByTeamIdAndVisibilityOrderByCreatedAtDesc(
-                teamId, com.project.taskmanagement.enums.BoardVisibility.GROUP);
-        for (com.project.taskmanagement.entity.Board b : groupBoards) {
-            boardMemberRepository.deleteByBoardIdAndUserId(b.getId(), targetUserId);
-        }
     }
 
     @Override
