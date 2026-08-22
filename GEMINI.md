@@ -566,10 +566,20 @@ Nhóm theo tính liên kết chức năng, tiếp nối đúng domain quen thu�
 - **#36** — Đính kèm file vào thẻ (Entity `CardAttachment` đã có từ Sprint 2, mục 6.11 — chỉ cần Service/Controller/UI). Lưu file local theo đúng quy ước avatar Sprint 1 (`static/uploads/`)
 - **#49** — Bình luận (đã có "thêm" từ Sprint 2 #35, story này bổ sung validate không được để trống)
 - **#50** — Sửa bình luận của chính mình
-- **#51** — Xóa bình luận của chính mình, có popup xác nhận
-- **#52** — Xem danh sách bình luận, sắp xếp thời gian **tăng dần** (cũ → mới) — kiểm tra lại code Sprint 2 hiện tại đang sort thế nào, có thể cần đổi chiều
+- **#51** — Xóa bình luận — **ĐÃ XÁC NHẬN LẠI VỚI GIẢNG VIÊN**: chỉ CHỦ bình luận được xóa, Board ADMIN **KHÔNG** được xóa bình luận của người khác. Giữ đúng sát nghĩa spec gốc `sprint3.txt`, có popup xác nhận trước khi xóa.
+- **#52** — Xem danh sách bình luận, sắp xếp thời gian **tăng dần** (cũ → mới) — đã fix bằng `@OrderBy("createdAt ASC")` trên `Card.comments`
 
 > Làm sau khi Đào xong việc tồn đọng: #30 (kéo-thả TaskList) và phần Team ở mục 13.1. **[Đã xong — xem lịch sử review PR trong quá trình làm việc]**
+
+> ⚠️ **Cấu hình bắt buộc cho #36 (đính kèm file)**: mỗi người cần tự thêm vào `application.yaml` local của mình (không commit, theo đúng quy ước bảo mật đã có):
+> ```yaml
+> spring:
+>   servlet:
+>     multipart:
+>       max-file-size: 10MB
+>       max-request-size: 10MB
+> ```
+> Lý do: Spring Boot mặc định giới hạn upload chỉ 1MB — validate 10MB trong `CardServiceImpl.addAttachment()` sẽ không bao giờ chạy tới với file 1-10MB nếu thiếu cấu hình này, gây lỗi `MaxUploadSizeExceededException` khó hiểu thay vì thông báo đã viết sẵn. Cần cập nhật `application.yaml.example` (file mẫu, có commit) để người mới clone biết cần thêm dòng này — **hiện tại file mẫu chưa có, cần bổ sung**.
 
 #### B. Tìm kiếm/lọc trong Board + Time log (Khuyên)
 - **#38** — Tìm kiếm theo tiêu đề thẻ (gần đúng, kết quả hiện trên board hiện tại)
