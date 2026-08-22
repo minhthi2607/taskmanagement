@@ -69,6 +69,15 @@
                         </button>
                     </form>
 
+                    <th:block th:if="${canEditBoard}">
+                        <!-- Story #42, #43: Quản lý nhãn -->
+                        <button type="button" data-bs-toggle="modal" data-bs-target="#manageLabelsModal"
+                                class="btn btn-outline-info btn-sm rounded-pill px-3 d-flex align-items-center gap-1 shadow-sm">
+                            <i class="bi bi-tags-fill me-1"></i>
+                            <span>Quản lý nhãn</span>
+                        </button>
+                    </th:block>
+
                     <!-- Dành riêng cho ADMIN bảng -->
                     <th:block th:if="${isBoardAdmin}">
                         <!-- Story #23: Mời thành viên -->
@@ -496,6 +505,74 @@
         </div>
     </th:block>
 
+    <!-- Modal Story #42, #43: Quản lý nhãn -->
+    <div class="modal fade" id="manageLabelsModal" tabindex="-1" aria-labelledby="manageLabelsModalLabel" aria-hidden="true" th:if="${canEditBoard}">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title fw-bold fs-6" id="manageLabelsModalLabel"><i class="bi bi-tags-fill me-2"></i>Quản lý nhãn của bảng</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <!-- Danh sách nhãn hiện có -->
+                    <h6 class="fw-bold text-secondary mb-3">Nhãn hiện có</h6>
+                    <div class="row row-cols-1 row-cols-md-2 g-3 mb-4">
+                        <div class="col" th:each="label : ${boardLabels}">
+                            <div class="card border shadow-sm">
+                                <div class="card-body p-2 d-flex align-items-center justify-content-between">
+                                    <div class="d-flex align-items-center w-75 gap-2">
+                                        <div class="rounded-circle shadow-sm flex-shrink-0" th:style="'width: 24px; height: 24px; background-color: ' + ${label.color} + ';'"></div>
+                                        <form th:action="@{/label/{id}/update(id=${label.id})}" method="post" class="d-flex align-items-center flex-grow-1 gap-2 m-0">
+                                            <input type="hidden" name="boardId" th:value="${board.id}">
+                                            <input type="hidden" name="color" th:value="${label.color}">
+                                            <input type="text" name="name" class="form-control form-control-sm border-0 bg-light flex-grow-1 px-2" th:value="${label.name}" required placeholder="Tên nhãn..." style="min-width: 0;">
+                                            <button type="submit" class="btn btn-sm btn-outline-primary" title="Lưu tên"><i class="bi bi-check-lg"></i></button>
+                                        </form>
+                                    </div>
+                                    <form th:action="@{/label/{id}/delete(id=${label.id})}" method="post" class="m-0" onsubmit="return confirm('Bạn có chắc chắn muốn xóa nhãn này? Nó sẽ bị gỡ khỏi tất cả các thẻ đang sử dụng.');">
+                                        <input type="hidden" name="boardId" th:value="${board.id}">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Xóa nhãn"><i class="bi bi-trash"></i></button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col w-100" th:if="${#lists.isEmpty(boardLabels)}">
+                            <p class="text-muted small mb-0">Chưa có nhãn nào trong bảng này.</p>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <!-- Form tạo nhãn mới -->
+                    <h6 class="fw-bold text-secondary mb-3">Tạo nhãn mới</h6>
+                    <form th:action="@{/board/{id}/labels/create(id=${board.id})}" method="post">
+                        <div class="row g-2 align-items-end">
+                            <div class="col-md-5">
+                                <label class="form-label small fw-semibold">Tên nhãn</label>
+                                <input type="text" name="name" class="form-control form-control-sm" placeholder="VD: Khẩn cấp, Lỗi..." required>
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label small fw-semibold">Màu sắc</label>
+                                <select name="color" class="form-select form-select-sm" required>
+                                    <option value="#0d6efd" style="background-color: #0d6efd; color: white;">Xanh dương (Blue)</option>
+                                    <option value="#198754" style="background-color: #198754; color: white;">Xanh lá (Green)</option>
+                                    <option value="#dc3545" style="background-color: #dc3545; color: white;">Đỏ (Red)</option>
+                                    <option value="#ffc107" style="background-color: #ffc107; color: black;">Vàng (Yellow)</option>
+                                    <option value="#0dcaf0" style="background-color: #0dcaf0; color: black;">Xanh lơ (Cyan)</option>
+                                    <option value="#6f42c1" style="background-color: #6f42c1; color: white;">Tím (Purple)</option>
+                                    <option value="#fd7e14" style="background-color: #fd7e14; color: white;">Cam (Orange)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <button type="submit" class="btn btn-primary btn-sm w-100">Tạo mới</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Modals cho từng Card (Story #35: xem/sửa chi tiết Card) -->
     <th:block th:each="list : ${taskLists}">
         <th:block th:each="card : ${list.cards}">
@@ -520,6 +597,40 @@
                                    th:text="${card.description != null and !#strings.isEmpty(card.description)} ? ${card.description} : 'Chưa có mô tả'">Mô tả</p>
                             </div>
 
+                            <!-- b2. Nhãn (Story #41) -->
+                            <div class="mb-4">
+                                <h6 class="fw-bold text-secondary"><i class="bi bi-tags me-2"></i>Nhãn</h6>
+                                <div class="d-flex flex-wrap gap-1 mb-2">
+                                    <span th:each="cardLabel : ${card.labels}" 
+                                          class="badge rounded-pill d-inline-flex align-items-center justify-content-between" 
+                                          th:style="'background-color: ' + ${cardLabel.label.color} + '; color: #fff; padding-right: 0.25rem;'">
+                                        <span class="px-1" th:text="${cardLabel.label.name}">Tên nhãn</span>
+                                        <form th:if="${canEditBoard}" th:action="@{/card/{cardId}/labels/{labelId}/remove(cardId=${card.id}, labelId=${cardLabel.label.id})}" method="post" class="m-0 ms-1">
+                                            <button type="submit" class="btn-close btn-close-white" style="font-size: 0.5rem;" aria-label="Gỡ nhãn"></button>
+                                        </form>
+                                    </span>
+                                    <span th:if="${#lists.isEmpty(card.labels)}" class="text-muted small">Chưa có nhãn nào.</span>
+                                </div>
+                                <div th:if="${canEditBoard}" class="dropdown">
+                                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="bi bi-plus-lg me-1"></i>Thêm nhãn
+                                    </button>
+                                    <ul class="dropdown-menu p-2 shadow-sm" style="min-width: 200px;">
+                                        <li th:each="boardLabel : ${boardLabels}" th:if="${!card.labels.![label.id].contains(boardLabel.id)}">
+                                            <form th:action="@{/card/{cardId}/labels/add(cardId=${card.id})}" method="post" class="m-0 mb-1">
+                                                <input type="hidden" name="labelId" th:value="${boardLabel.id}">
+                                                <button type="submit" class="dropdown-item rounded d-flex align-items-center justify-content-between p-1">
+                                                    <span class="badge w-100 text-start py-2" th:style="'background-color: ' + ${boardLabel.color} + '; color: #fff;'" th:text="${boardLabel.name}">Nhãn</span>
+                                                </button>
+                                            </form>
+                                        </li>
+                                        <li th:if="${#lists.isEmpty(boardLabels) or card.labels.size() == boardLabels.size()}">
+                                            <span class="dropdown-item-text text-muted small">Không còn nhãn nào để thêm.</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+
                             <!-- c. Thành viên -->
                             <div class="mb-4">
                                 <h6 class="fw-bold text-secondary"><i class="bi bi-people me-2"></i>Thành viên</h6>
@@ -536,15 +647,24 @@
                                     </li>
                                     <li class="list-group-item px-0 text-muted small" th:if="${#lists.isEmpty(card.members)}">Chưa có thành viên nào.</li>
                                 </ul>
-                                <form th:if="${canEditBoard}" th:action="@{/card/{id}/members/add(id=${card.id})}" method="post" class="d-flex gap-2">
-                                    <select name="userId" class="form-select form-select-sm">
-                                        <th:block th:each="bm : ${boardMembers}">
-                                            <option th:if="${!card.members.![userId].contains(bm.user.id)}"
-                                                    th:value="${bm.user.id}" th:text="${bm.user.displayName} + ' (' + ${bm.user.email} + ')'">Thành viên</option>
-                                        </th:block>
-                                    </select>
-                                    <button type="submit" class="btn btn-outline-primary btn-sm px-3">Thêm</button>
-                                </form>
+                                <div th:if="${canEditBoard}">
+                                    <input type="text" class="form-control form-control-sm mb-2 member-search-input" th:data-card-id="${card.id}" placeholder="Tìm kiếm thành viên để thêm...">
+                                    <ul class="list-group list-group-flush member-search-results" th:id="'memberSearchResults-' + ${card.id}" style="max-height: 150px; overflow-y: auto; display: none;">
+                                        <li class="list-group-item px-2 py-1 member-search-item" th:each="bm : ${boardMembers}" th:if="${!card.members.![userId].contains(bm.user.id)}">
+                                            <div class="d-flex justify-content-between align-items-center w-100">
+                                                <div class="text-truncate">
+                                                    <span class="fw-semibold member-name" th:text="${bm.user.displayName}">Tên</span>
+                                                    <span class="text-secondary small member-email" th:text="${bm.user.email}">email@example.com</span>
+                                                </div>
+                                                <form th:action="@{/card/{id}/members/add(id=${card.id})}" method="post" class="m-0 ms-2">
+                                                    <input type="hidden" name="userId" th:value="${bm.user.id}">
+                                                    <button type="submit" class="btn btn-primary btn-sm py-0 px-2">Thêm</button>
+                                                </form>
+                                            </div>
+                                        </li>
+                                        <li class="list-group-item px-2 py-1 text-muted small no-results-msg" style="display: none;">Không tìm thấy thành viên.</li>
+                                    </ul>
+                                </div>
                             </div>
 
                             <!-- d. Bình luận -->
@@ -802,6 +922,39 @@
                     }
                 });
             }
+
+            // Story #37: Tìm kiếm thành viên trong modal Card
+            document.querySelectorAll('.member-search-input').forEach(function(input) {
+                input.addEventListener('input', function() {
+                    const cardId = this.getAttribute('data-card-id');
+                    const query = this.value.toLowerCase().trim();
+                    const resultsContainer = document.getElementById('memberSearchResults-' + cardId);
+                    const items = resultsContainer.querySelectorAll('.member-search-item');
+                    const noResultsMsg = resultsContainer.querySelector('.no-results-msg');
+                    let hasResults = false;
+
+                    if (query.length > 0) {
+                        resultsContainer.style.display = 'block';
+                        items.forEach(function(item) {
+                            const name = item.querySelector('.member-name').textContent.toLowerCase();
+                            const email = item.querySelector('.member-email').textContent.toLowerCase();
+                            if (name.includes(query) || email.includes(query)) {
+                                item.style.setProperty('display', 'block', 'important');
+                                hasResults = true;
+                            } else {
+                                item.style.setProperty('display', 'none', 'important');
+                            }
+                        });
+                        if (hasResults) {
+                            noResultsMsg.style.setProperty('display', 'none', 'important');
+                        } else {
+                            noResultsMsg.style.setProperty('display', 'block', 'important');
+                        }
+                    } else {
+                        resultsContainer.style.display = 'none';
+                    }
+                });
+            });
         });
     </script>
 </th:block>

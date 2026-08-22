@@ -11,6 +11,7 @@ import com.project.taskmanagement.service.TaskListService;
 import com.project.taskmanagement.service.BoardService;
 import com.project.taskmanagement.service.BoardPermissionService;
 import com.project.taskmanagement.service.BoardMemberService;
+import com.project.taskmanagement.service.LabelService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -28,6 +29,7 @@ public class BoardController {
     private final BoardPermissionService boardPermissionService;
     private final BoardMemberService boardMemberService;
     private final TaskListService taskListService;
+    private final LabelService labelService;
 
     /**
      * Story #20: Tạo mới Bảng công việc từ DTO (Task B)
@@ -99,6 +101,7 @@ public class BoardController {
             model.addAttribute("taskLists", taskListService.getTaskListsByBoardId(boardId));
             model.addAttribute("allVisibilities", BoardVisibility.values());
             model.addAttribute("boardMembers", boardMemberService.getBoardMembers(boardId));
+            model.addAttribute("boardLabels", labelService.getLabelsByBoardId(boardId));
             model.addAttribute("currentUser", currentUser);
 
             return "board/board-detail";

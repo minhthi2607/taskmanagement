@@ -224,4 +224,60 @@ public class CardController {
 
         return (boardId != null) ? "redirect:/board/" + boardId : "redirect:/";
     }
+
+    /**
+     * Gán nhãn vào thẻ (#41)
+     */
+    @PostMapping("/card/{cardId}/labels/add")
+    public String addCardLabel(
+            @PathVariable("cardId") Long cardId,
+            @RequestParam("labelId") Long labelId,
+            @AuthenticationPrincipal UserPrincipal principal,
+            RedirectAttributes redirectAttributes
+    ) {
+        if (principal == null || principal.getUser() == null) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Bạn cần đăng nhập để thực hiện thao tác này!");
+            return "redirect:/auth/login";
+        }
+
+        Long boardId = null;
+        try {
+            Card card = cardService.getCardById(cardId);
+            boardId = taskListService.getTaskListById(card.getTaskListId()).getBoardId();
+            cardService.addCardLabel(cardId, labelId, principal.getUser());
+            redirectAttributes.addFlashAttribute("successMessage", "Gán nhãn vào thẻ thành công!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+
+        return (boardId != null) ? "redirect:/board/" + boardId : "redirect:/";
+    }
+
+    /**
+     * Gỡ nhãn khỏi thẻ (#41)
+     */
+    @PostMapping("/card/{cardId}/labels/{labelId}/remove")
+    public String removeCardLabel(
+            @PathVariable("cardId") Long cardId,
+            @PathVariable("labelId") Long labelId,
+            @AuthenticationPrincipal UserPrincipal principal,
+            RedirectAttributes redirectAttributes
+    ) {
+        if (principal == null || principal.getUser() == null) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Bạn cần đăng nhập để thực hiện thao tác này!");
+            return "redirect:/auth/login";
+        }
+
+        Long boardId = null;
+        try {
+            Card card = cardService.getCardById(cardId);
+            boardId = taskListService.getTaskListById(card.getTaskListId()).getBoardId();
+            cardService.removeCardLabel(cardId, labelId, principal.getUser());
+            redirectAttributes.addFlashAttribute("successMessage", "Đã gỡ nhãn khỏi thẻ!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+
+        return (boardId != null) ? "redirect:/board/" + boardId : "redirect:/";
+    }
 }
