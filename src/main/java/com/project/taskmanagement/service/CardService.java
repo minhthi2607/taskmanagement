@@ -2,7 +2,10 @@ package com.project.taskmanagement.service;
 
 import com.project.taskmanagement.dto.CardUpdateDto;
 import com.project.taskmanagement.entity.Card;
+import com.project.taskmanagement.entity.CardAttachment;
+import com.project.taskmanagement.entity.CardComment;
 import com.project.taskmanagement.entity.User;
+import org.springframework.web.multipart.MultipartFile;
 
 public interface CardService {
 
@@ -30,7 +33,30 @@ public interface CardService {
 
     void removeCardMember(Long cardId, Long userId, User currentUser);
 
+    /**
+     * Story #49: Thêm bình luận vào thẻ
+     */
     void addCardComment(Long cardId, String content, User currentUser);
+
+    /**
+     * Story #50: Chỉnh sửa bình luận của chính mình
+     */
+    CardComment updateCardComment(Long commentId, String content, User currentUser);
+
+    /**
+     * Story #51: Xóa bình luận của chính mình (hoặc Admin)
+     */
+    void deleteCardComment(Long commentId, User currentUser);
+
+    /**
+     * Story #36: Đính kèm tệp vào thẻ
+     */
+    CardAttachment addAttachment(Long cardId, MultipartFile file, User currentUser);
+
+    /**
+     * Story #36: Xóa tệp đính kèm
+     */
+    void deleteAttachment(Long attachmentId, User currentUser);
 
     /**
      * Lấy chi tiết Card theo ID

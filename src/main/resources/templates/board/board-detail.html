@@ -547,22 +547,129 @@
                                 </form>
                             </div>
 
-                            <!-- d. Bình luận -->
+                            <!-- d. Tệp đính kèm (#36) -->
                             <div class="mb-4">
-                                <h6 class="fw-bold text-secondary"><i class="bi bi-chat-left-text me-2"></i>Bình luận</h6>
-                                <div class="mb-2" style="max-height: 200px; overflow-y: auto;">
-                                    <div th:each="cmt : ${card.comments}" class="mb-2 pb-2 border-bottom">
-                                        <div class="d-flex justify-content-between">
-                                            <span class="fw-semibold small" th:text="${cmt.user.displayName}">Tên</span>
-                                            <span class="text-muted" style="font-size: 0.75rem;" th:text="${#temporals.format(cmt.createdAt, 'dd/MM/yyyy HH:mm')}">thời gian</span>
-                                        </div>
-                                        <div class="small" th:text="${cmt.content}">Nội dung bình luận</div>
-                                    </div>
-                                    <div th:if="${#lists.isEmpty(card.comments)}" class="text-muted small">Chưa có bình luận nào.</div>
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h6 class="fw-bold text-secondary mb-0">
+                                        <i class="bi bi-paperclip me-2 text-primary"></i>Tệp đính kèm
+                                        <span class="badge bg-secondary-subtle text-secondary rounded-pill ms-1" th:text="${#lists.size(card.attachments)}">0</span>
+                                    </h6>
                                 </div>
+
+                                <!-- Danh sách tệp đính kèm -->
+                                <div class="list-group list-group-flush mb-3" th:unless="${#lists.isEmpty(card.attachments)}">
+                                    <div th:each="att : ${card.attachments}" class="list-group-item px-3 py-2 border rounded-3 mb-2 bg-light-subtle d-flex align-items-center justify-content-between gap-3 shadow-xs">
+                                        <div class="d-flex align-items-center gap-3 overflow-hidden">
+                                            <div class="bg-primary-subtle text-primary rounded p-2 d-flex align-items-center justify-content-center" style="width: 38px; height: 38px; flex-shrink: 0;">
+                                                <i class="bi bi-file-earmark-arrow-down fs-5"></i>
+                                            </div>
+                                            <div class="overflow-hidden">
+                                                <a th:href="${att.fileUrl}" target="_blank" download class="fw-semibold text-dark text-decoration-none text-truncate d-block hover-text-primary" th:text="${att.fileName}">Tên file</a>
+                                                <div class="text-muted small" style="font-size: 0.75rem;">
+                                                    <span th:text="${att.uploader != null ? att.uploader.displayName : 'Thành viên'}">Uploader</span>
+                                                    • <span th:text="${#temporals.format(att.uploadedAt, 'dd/MM/yyyy HH:mm')}">Thời gian</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <a th:href="${att.fileUrl}" target="_blank" download class="btn btn-sm btn-outline-primary rounded-pill px-2.5 py-1 text-nowrap" style="font-size: 0.75rem;">
+                                                <i class="bi bi-download me-1"></i>Tải về
+                                            </a>
+                                            <form th:if="${canEditBoard and (att.uploadedBy == currentUser.id or isBoardAdmin)}"
+                                                  th:action="@{/card/attachments/{id}/delete(id=${att.id})}" method="post" class="m-0"
+                                                  onsubmit="return confirm('Bạn có chắc chắn muốn xóa tệp đính kèm này?');">
+                                                <input type="hidden" name="cardId" th:value="${card.id}">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger rounded-circle p-0 d-inline-flex align-items-center justify-content-center" style="width: 28px; height: 28px;" title="Xóa tệp đính kèm">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div th:if="${#lists.isEmpty(card.attachments)}" class="text-muted small py-2 italic opacity-75">
+                                    Chưa có tệp đính kèm nào.
+                                </div>
+
+                                <!-- Form Upload tệp đính kèm mới -->
+                                <form th:if="${canEditBoard}" th:action="@{/card/{id}/attachments/add(id=${card.id})}" method="post" enctype="multipart/form-data" class="d-flex gap-2 align-items-center">
+                                    <input type="file" name="file" class="form-control form-control-sm shadow-none" required>
+                                    <button type="submit" class="btn btn-primary btn-sm px-3 text-nowrap d-flex align-items-center gap-1">
+                                        <i class="bi bi-upload"></i>Tải tệp lên
+                                    </button>
+                                </form>
+                            </div>
+
+                            <!-- e. Bình luận (#49, #50, #51, #52) -->
+                            <div class="mb-4">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h6 class="fw-bold text-secondary mb-0">
+                                        <i class="bi bi-chat-left-text me-2 text-primary"></i>Bình luận
+                                        <span class="badge bg-secondary-subtle text-secondary rounded-pill ms-1" th:text="${#lists.size(card.comments)}">0</span>
+                                    </h6>
+                                </div>
+
+                                <!-- Danh sách bình luận -->
+                                <div class="mb-3 d-flex flex-column gap-3" style="max-height: 280px; overflow-y: auto;">
+                                    <div th:each="cmt : ${card.comments}" class="d-flex gap-2 align-items-start">
+                                        <!-- Avatar -->
+                                        <img th:if="${cmt.user != null and cmt.user.avatarUrl != null}" th:src="${cmt.user.avatarUrl}" alt="Avatar" class="rounded-circle object-fit-cover flex-shrink-0" width="32" height="32">
+                                        <div th:unless="${cmt.user != null and cmt.user.avatarUrl != null}" class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 fw-bold" style="width: 32px; height: 32px; font-size: 0.8rem;">
+                                            <span th:text="${cmt.user != null ? #strings.substring(cmt.user.displayName, 0, 1) : 'U'}">U</span>
+                                        </div>
+
+                                        <div class="w-100">
+                                            <div class="bg-light p-2.5 rounded-3 border">
+                                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                                    <span class="fw-semibold text-dark small" th:text="${cmt.user != null ? cmt.user.displayName : 'Người dùng'}">Tên người dùng</span>
+                                                    <span class="text-muted" style="font-size: 0.7rem;" th:text="${#temporals.format(cmt.createdAt, 'dd/MM/yyyy HH:mm')}">Thời gian</span>
+                                                </div>
+
+                                                <!-- Content hiển thị bình thường -->
+                                                <div th:id="'commentText-' + ${cmt.id}" class="small text-secondary text-break" th:text="${cmt.content}">Nội dung bình luận</div>
+
+                                                <!-- Form chỉnh sửa bình luận inline (#50) -->
+                                                <form th:if="${canEditBoard and cmt.userId == currentUser.id}"
+                                                      th:id="'commentEditForm-' + ${cmt.id}"
+                                                      th:action="@{/card/comments/{id}/update(id=${cmt.id})}"
+                                                      method="post" class="d-none mt-2">
+                                                    <textarea name="content" class="form-control form-control-sm mb-2" rows="2" required th:text="${cmt.content}"></textarea>
+                                                    <div class="d-flex gap-2 justify-content-end">
+                                                        <button type="button" class="btn btn-light btn-sm py-0.5 px-2" style="font-size: 0.75rem;" th:onclick="'toggleEditComment(' + ${cmt.id} + ')'">Hủy</button>
+                                                        <button type="submit" class="btn btn-primary btn-sm py-0.5 px-2" style="font-size: 0.75rem;">Lưu</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+
+                                            <!-- Thao tác Sửa / Xóa bình luận (#50, #51) -->
+                                            <div class="d-flex gap-3 ms-2 mt-1" style="font-size: 0.75rem;" th:if="${canEditBoard}">
+                                                <button type="button" th:if="${cmt.userId == currentUser.id}"
+                                                        class="btn btn-link p-0 text-decoration-none text-muted hover-text-primary border-0"
+                                                        th:onclick="'toggleEditComment(' + ${cmt.id} + ')'">
+                                                    <i class="bi bi-pencil me-1"></i>Sửa
+                                                </button>
+
+                                                <form th:if="${cmt.userId == currentUser.id or isBoardAdmin}"
+                                                      th:action="@{/card/comments/{id}/delete(id=${cmt.id})}" method="post" class="d-inline"
+                                                      onsubmit="return confirm('Bạn có chắc chắn muốn xóa bình luận này?');">
+                                                    <input type="hidden" name="cardId" th:value="${card.id}">
+                                                    <button type="submit" class="btn btn-link p-0 text-decoration-none text-danger hover-text-danger border-0">
+                                                        <i class="bi bi-trash me-1"></i>Xóa
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div th:if="${#lists.isEmpty(card.comments)}" class="text-muted small py-2 italic opacity-75">
+                                        Chưa có bình luận nào.
+                                    </div>
+                                </div>
+
+                                <!-- Form Thêm bình luận mới (#49) -->
                                 <form th:if="${canEditBoard}" th:action="@{/card/{id}/comments/add(id=${card.id})}" method="post" class="d-flex gap-2">
-                                    <input type="text" name="content" class="form-control form-control-sm" placeholder="Viết bình luận..." required>
-                                    <button type="submit" class="btn btn-outline-primary btn-sm px-3">Thêm</button>
+                                    <input type="text" name="content" class="form-control form-control-sm shadow-none" placeholder="Viết bình luận..." required>
+                                    <button type="submit" class="btn btn-primary btn-sm px-3 text-nowrap d-flex align-items-center gap-1">
+                                        <i class="bi bi-send-fill"></i>Gửi
+                                    </button>
                                 </form>
                             </div>
 
@@ -613,6 +720,16 @@
         function hideAddCardForm(listId) {
             document.getElementById('addCardTrigger-' + listId).classList.remove('d-none');
             document.getElementById('addCardForm-' + listId).classList.add('d-none');
+        }
+
+        // Story #50: Bật/Tắt form chỉnh sửa bình luận tại chỗ
+        function toggleEditComment(commentId) {
+            const textEl = document.getElementById('commentText-' + commentId);
+            const formEl = document.getElementById('commentEditForm-' + commentId);
+            if (textEl && formEl) {
+                textEl.classList.toggle('d-none');
+                formEl.classList.toggle('d-none');
+            }
         }
 
         // Story #35: Khôi phục lại mô tả gốc khi đóng modal chi tiết Card
