@@ -44,7 +44,7 @@ public interface CardService {
     CardComment updateCardComment(Long commentId, String content, User currentUser);
 
     /**
-     * Story #51: Xóa bình luận của chính mình (hoặc Admin)
+     * Story #51: Xóa bình luận của chính mình
      */
     void deleteCardComment(Long commentId, User currentUser);
 

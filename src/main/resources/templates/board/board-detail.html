@@ -648,7 +648,7 @@
                                                     <i class="bi bi-pencil me-1"></i>Sửa
                                                 </button>
 
-                                                <form th:if="${cmt.userId == currentUser.id or isBoardAdmin}"
+                                                <form th:if="${cmt.userId == currentUser.id}"
                                                       th:action="@{/card/comments/{id}/delete(id=${cmt.id})}" method="post" class="d-inline"
                                                       onsubmit="return confirm('Bạn có chắc chắn muốn xóa bình luận này?');">
                                                     <input type="hidden" name="cardId" th:value="${card.id}">

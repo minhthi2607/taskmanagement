@@ -142,19 +142,17 @@ class CardServiceImplTest {
     }
 
     @Test
-    @DisplayName("deleteCardComment - Board Admin xóa bình luận của người khác thành công")
-    void deleteCardComment_BoardAdmin_Success() {
+    @DisplayName("deleteCardComment - Thất bại khi không phải tác giả (kể cả Board Admin)")
+    void deleteCardComment_NotOwner_ThrowsException() {
         CardComment comment = CardComment.builder().id(1000L).cardId(50L).userId(2L).content("Nội dung của user 2").build();
-        BoardMember adminMember = BoardMember.builder().boardId(100L).userId(1L).role(Role.ADMIN).build();
 
         when(cardCommentRepository.findById(1000L)).thenReturn(Optional.of(comment));
         when(cardRepository.findById(50L)).thenReturn(Optional.of(card));
         when(taskListRepository.findById(10L)).thenReturn(Optional.of(taskList));
-        when(boardMemberRepository.findByBoardIdAndUserId(100L, 1L)).thenReturn(Optional.of(adminMember));
 
-        cardService.deleteCardComment(1000L, currentUser);
-
-        verify(cardCommentRepository, times(1)).delete(comment);
+        assertThrows(AccessDeniedException.class, () ->
+                cardService.deleteCardComment(1000L, currentUser)
+        );
     }
 
     @Test

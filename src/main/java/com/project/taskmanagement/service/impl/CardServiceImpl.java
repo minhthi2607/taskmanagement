@@ -230,7 +230,7 @@ public class CardServiceImpl implements CardService {
     }
 
     /**
-     * Story #51: Xóa bình luận của chính mình (hoặc Board Admin)
+     * Story #51: Xóa bình luận của chính mình
      */
     @Override
     @Transactional
@@ -243,11 +243,8 @@ public class CardServiceImpl implements CardService {
         boardPermissionService.checkEditPermission(taskList.getBoardId(), currentUser);
 
         boolean isOwner = Objects.equals(comment.getUserId(), currentUser.getId());
-        boolean isBoardAdmin = boardMemberRepository.findByBoardIdAndUserId(taskList.getBoardId(), currentUser.getId())
-                .map(bm -> bm.getRole() == Role.ADMIN)
-                .orElse(false);
 
-        if (!isOwner && !isBoardAdmin) {
+        if (!isOwner) {
             throw new AccessDeniedException("Bạn không có quyền xóa bình luận này!");
         }
 
@@ -332,7 +329,7 @@ public class CardServiceImpl implements CardService {
             throw new AccessDeniedException("Bạn không có quyền xóa tệp đính kèm này!");
         }
 
-        // Xóa file фізический nếu có
+        // Xóa file vật lý nếu có
         try {
             if (attachment.getFileUrl() != null && attachment.getFileUrl().startsWith("/uploads/")) {
                 String relativePath = attachment.getFileUrl().substring("/uploads/".length());
