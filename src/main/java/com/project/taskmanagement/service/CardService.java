@@ -32,6 +32,10 @@ public interface CardService {
 
     void addCardComment(Long cardId, String content, User currentUser);
 
+    void addCardLabel(Long cardId, Long labelId, User currentUser);
+
+    void removeCardLabel(Long cardId, Long labelId, User currentUser);
+
     /**
      * Lấy chi tiết Card theo ID
      */

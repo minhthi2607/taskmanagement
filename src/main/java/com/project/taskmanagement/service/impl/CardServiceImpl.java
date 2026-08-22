@@ -3,6 +3,7 @@ package com.project.taskmanagement.service.impl;
 import com.project.taskmanagement.dto.CardUpdateDto;
 import com.project.taskmanagement.entity.Card;
 import com.project.taskmanagement.entity.CardComment;
+import com.project.taskmanagement.entity.CardLabel;
 import com.project.taskmanagement.entity.CardMember;
 import com.project.taskmanagement.entity.TaskList;
 import com.project.taskmanagement.entity.User;
@@ -11,6 +12,8 @@ import com.project.taskmanagement.repository.BoardMemberRepository;
 import com.project.taskmanagement.repository.CardCommentRepository;
 import com.project.taskmanagement.repository.CardMemberRepository;
 import com.project.taskmanagement.repository.CardRepository;
+import com.project.taskmanagement.repository.LabelRepository;
+import com.project.taskmanagement.repository.CardLabelRepository;
 import com.project.taskmanagement.repository.TaskListRepository;
 import com.project.taskmanagement.service.BoardPermissionService;
 import com.project.taskmanagement.service.CardService;
@@ -28,6 +31,8 @@ public class CardServiceImpl implements CardService {
     private final TaskListRepository taskListRepository;
     private final BoardMemberRepository boardMemberRepository;
     private final BoardPermissionService boardPermissionService;
+    private final LabelRepository labelRepository;
+    private final CardLabelRepository cardLabelRepository;
 
     private TaskList getTaskListOrThrow(Long taskListId) {
         return taskListRepository.findById(taskListId)
@@ -175,6 +180,41 @@ public class CardServiceImpl implements CardService {
                 .content(trimmedContent)
                 .build();
         cardCommentRepository.save(comment);
+    }
+
+    @Override
+    @Transactional
+    public void addCardLabel(Long cardId, Long labelId, User currentUser) {
+        Card card = getCardById(cardId);
+        TaskList taskList = getTaskListOrThrow(card.getTaskListId());
+        boardPermissionService.checkEditPermission(taskList.getBoardId(), currentUser);
+
+        if (!labelRepository.existsById(labelId)) {
+            throw new IllegalArgumentException("Không tìm thấy nhãn!");
+        }
+
+        if (cardLabelRepository.existsByCardIdAndLabelId(cardId, labelId)) {
+            throw new IllegalArgumentException("Nhãn đã được gán vào thẻ này!");
+        }
+
+        CardLabel cardLabel = CardLabel.builder()
+                .cardId(cardId)
+                .labelId(labelId)
+                .build();
+        cardLabelRepository.save(cardLabel);
+    }
+
+    @Override
+    @Transactional
+    public void removeCardLabel(Long cardId, Long labelId, User currentUser) {
+        Card card = getCardById(cardId);
+        TaskList taskList = getTaskListOrThrow(card.getTaskListId());
+        boardPermissionService.checkEditPermission(taskList.getBoardId(), currentUser);
+
+        if (!cardLabelRepository.existsByCardIdAndLabelId(cardId, labelId)) {
+            throw new ResourceNotFoundException("Nhãn không thuộc thẻ này!");
+        }
+        cardLabelRepository.deleteByCardIdAndLabelId(cardId, labelId);
     }
 
     @Override
