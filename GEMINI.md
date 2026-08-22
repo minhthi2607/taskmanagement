@@ -563,7 +563,7 @@ Khi có bất kỳ hành động nào xảy ra trên 1 Card (di chuyển #34, th
 Nhóm theo tính liên kết chức năng, tiếp nối đúng domain quen thuộc từ Sprint 2.
 
 #### A. Đính kèm file & Bình luận đầy đủ (Đào)
-- **#36** — Đính kèm file vào thẻ (Entity `CardAttachment` đã có từ Sprint 2, mục 6.11 — chỉ cần Service/Controller/UI). Lưu file local theo đúng quy ước avatar Sprint 1 (`static/uploads/`)
+- **#36** — Đính kèm file vào thẻ (Entity `CardAttachment` đã có từ Sprint 2, mục 6.11 — chỉ cần Service/Controller/UI). Lưu file local theo đúng quy ước avatar Sprint 1 (`static/uploads/`). **Ghi chú**: `sprint3.txt` chỉ mô tả việc THÊM file + hiển thị tên tệp, không hề nhắc đến việc XÓA file đính kèm. Đào tự bổ sung `deleteAttachment()` (không có trong yêu cầu gốc), cho phép cả người upload lẫn Board ADMIN xóa — **đã xác nhận đây là quyết định hợp lý, KHÁC với #51** vì #36 không có ràng buộc "của mình" như câu chữ #51, nên không có gì sai khi để Admin xóa được (khác #51 vốn có ràng buộc rõ ràng, phải thu hẹp lại chỉ cho chủ bình luận).
 - **#49** — Bình luận (đã có "thêm" từ Sprint 2 #35, story này bổ sung validate không được để trống)
 - **#50** — Sửa bình luận của chính mình
 - **#51** — Xóa bình luận — **ĐÃ XÁC NHẬN LẠI VỚI GIẢNG VIÊN**: chỉ CHỦ bình luận được xóa, Board ADMIN **KHÔNG** được xóa bình luận của người khác. Giữ đúng sát nghĩa spec gốc `sprint3.txt`, có popup xác nhận trước khi xóa.
@@ -612,7 +612,7 @@ Nhóm theo tính liên kết chức năng, tiếp nối đúng domain quen thu�
 |---|---|---|
 | **#53** — Due date + nhắc việc | Cần `NotificationService` | Khuyên (sau khi xong nhóm B) |
 | **#54** — Theo dõi thẻ | Cần `NotificationService` | Thành (sau khi xong nhóm C) |
-
+    
 ### 14.7 Lưu ý phụ thuộc & thứ tự triển khai
 
 - Nhóm A, B, C, D **có thể làm song song ngay từ đầu sprint** — không phụ thuộc lẫn nhau
