@@ -71,6 +71,10 @@ public class Card {
     @OneToMany(mappedBy = "card", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CardComment> comments = new ArrayList<>();
 
+    @Builder.Default
+    @OneToMany(mappedBy = "card", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<CardTimeLog> timeLogs = new ArrayList<>();
+
     @PrePersist
     public void prePersist() {
         if (createdAt == null) {

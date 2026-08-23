@@ -2,17 +2,22 @@ package com.project.taskmanagement.controller;
 
 import com.project.taskmanagement.config.UserPrincipal;
 import com.project.taskmanagement.dto.CardCreateDto;
+import com.project.taskmanagement.dto.CardSearchDto;
 import com.project.taskmanagement.dto.CardUpdateDto;
 import com.project.taskmanagement.entity.Card;
+import com.project.taskmanagement.entity.User;
 import com.project.taskmanagement.service.CardService;
 import com.project.taskmanagement.service.TaskListService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import java.util.List;
 
 @Controller
 @RequiredArgsConstructor
@@ -223,5 +228,36 @@ public class CardController {
         }
 
         return (boardId != null) ? "redirect:/board/" + boardId : "redirect:/";
+    }
+
+    /**
+     * Story #38, #39, #40: Tìm kiếm & Lọc Card trong Board qua DTO và JPA Specification (Server-side rendering)
+     */
+    @GetMapping("/board/{boardId}/search")
+    public String searchCardsInBoard(
+            @PathVariable("boardId") Long boardId,
+            @ModelAttribute CardSearchDto searchDto,
+            @AuthenticationPrincipal UserPrincipal principal,
+            Model model,
+            RedirectAttributes redirectAttributes
+    ) {
+        User currentUser = (principal != null) ? principal.getUser() : null;
+        try {
+            if (searchDto == null) {
+                searchDto = new CardSearchDto();
+            }
+            searchDto.setBoardId(boardId);
+
+            List<Card> filteredCards = cardService.searchCards(searchDto, currentUser);
+
+            model.addAttribute("filteredCards", filteredCards);
+            model.addAttribute("searchDto", searchDto);
+            model.addAttribute("boardId", boardId);
+
+            return "board/board-detail";
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            return "redirect:/board/" + boardId;
+        }
     }
 }
