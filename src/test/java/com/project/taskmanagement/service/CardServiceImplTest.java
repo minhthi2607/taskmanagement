@@ -1,5 +1,6 @@
 package com.project.taskmanagement.service;
 
+import com.project.taskmanagement.dto.CardSearchDto;
 import com.project.taskmanagement.entity.BoardMember;
 import com.project.taskmanagement.entity.Card;
 import com.project.taskmanagement.entity.CardAttachment;
@@ -22,15 +23,16 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -60,6 +62,7 @@ class CardServiceImplTest {
     @InjectMocks
     private CardServiceImpl cardService;
 
+    private User user;
     private User currentUser;
     private User otherUser;
     private TaskList taskList;
@@ -69,11 +72,48 @@ class CardServiceImplTest {
     void setUp() {
         ReflectionTestUtils.setField(cardService, "uploadDirConfig", "uploads/");
 
+        user = User.builder()
+                .id(1L)
+                .email("user@example.com")
+                .displayName("Test User")
+                .build();
+
         currentUser = User.builder().id(1L).email("user1@example.com").displayName("User One").build();
         otherUser = User.builder().id(2L).email("user2@example.com").displayName("User Two").build();
 
         taskList = TaskList.builder().id(10L).boardId(100L).name("To Do").position(10).build();
         card = Card.builder().id(50L).taskListId(10L).title("Test Card").createdBy(1L).build();
+    }
+
+    @Test
+    @DisplayName("searchCards thành công với DTO chứa các tiêu chí lọc")
+    void searchCards_success() {
+        CardSearchDto searchDto = CardSearchDto.builder()
+                .boardId(100L)
+                .keyword("fix")
+                .labelIds(List.of(1L, 2L))
+                .memberIds(List.of(1L))
+                .build();
+
+        Card card1 = Card.builder().id(10L).title("Fix login bug").build();
+        when(cardRepository.findAll(any(Specification.class))).thenReturn(List.of(card1));
+        doNothing().when(boardPermissionService).checkViewPermission(100L, user);
+
+        List<Card> results = cardService.searchCards(searchDto, user);
+
+        assertNotNull(results);
+        assertEquals(1, results.size());
+        assertEquals("Fix login bug", results.get(0).getTitle());
+        verify(boardPermissionService, times(1)).checkViewPermission(100L, user);
+        verify(cardRepository, times(1)).findAll(any(Specification.class));
+    }
+
+    @Test
+    @DisplayName("searchCards báo lỗi khi không truyền boardId")
+    void searchCards_missingBoardId() {
+        CardSearchDto searchDto = CardSearchDto.builder().build();
+
+        assertThrows(IllegalArgumentException.class, () -> cardService.searchCards(searchDto, user));
     }
 
     @Test

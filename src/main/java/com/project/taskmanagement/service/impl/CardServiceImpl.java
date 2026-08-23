@@ -1,5 +1,6 @@
 package com.project.taskmanagement.service.impl;
 
+import com.project.taskmanagement.dto.CardSearchDto;
 import com.project.taskmanagement.dto.CardUpdateDto;
 import com.project.taskmanagement.entity.Card;
 import com.project.taskmanagement.entity.CardAttachment;
@@ -17,8 +18,10 @@ import com.project.taskmanagement.repository.CardRepository;
 import com.project.taskmanagement.repository.TaskListRepository;
 import com.project.taskmanagement.service.BoardPermissionService;
 import com.project.taskmanagement.service.CardService;
+import com.project.taskmanagement.specification.CardSpecification;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +33,8 @@ import java.io.InputStream;
 import java.nio.file.*;
 import java.util.Objects;
 import java.util.UUID;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -198,6 +203,23 @@ public class CardServiceImpl implements CardService {
                 .content(trimmedContent)
                 .build();
         cardCommentRepository.save(comment);
+    }
+
+
+    /**
+     * Story #38, #39, #40: Tìm kiếm & Lọc Card trong Board qua DTO và JPA Specification (Task B)
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public List<Card> searchCards(CardSearchDto searchDto, User currentUser) {
+        if (searchDto == null || searchDto.getBoardId() == null) {
+            throw new IllegalArgumentException("Board ID không được để trống khi tìm kiếm!");
+        }
+
+        boardPermissionService.checkViewPermission(searchDto.getBoardId(), currentUser);
+
+        Specification<Card> spec = CardSpecification.filterCards(searchDto);
+        return cardRepository.findAll(spec);
     }
 
     /**

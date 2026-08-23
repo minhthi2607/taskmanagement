@@ -4,6 +4,7 @@ import com.project.taskmanagement.config.UserPrincipal;
 import com.project.taskmanagement.dto.CardCreateDto;
 import com.project.taskmanagement.dto.CardUpdateDto;
 import com.project.taskmanagement.entity.Card;
+import com.project.taskmanagement.entity.User;
 import com.project.taskmanagement.service.CardService;
 import com.project.taskmanagement.service.TaskListService;
 import jakarta.validation.Valid;

@@ -39,6 +39,11 @@ public interface CardService {
     void addCardComment(Long cardId, String content, User currentUser);
 
     /**
+     * Story #38, #39, #40: Tìm kiếm & Lọc Card trong Board qua DTO và JPA Specification (Task B)
+     */
+    java.util.List<Card> searchCards(com.project.taskmanagement.dto.CardSearchDto searchDto, User currentUser);
+
+    /**
      * Story #50: Chỉnh sửa bình luận của chính mình
      */
     CardComment updateCardComment(Long commentId, String content, User currentUser);
