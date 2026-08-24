@@ -13,6 +13,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import com.project.taskmanagement.exception.LabelNotFoundException;
+import com.project.taskmanagement.repository.CardLabelRepository;
 
 @Service
 @RequiredArgsConstructor
@@ -21,6 +23,7 @@ public class LabelServiceImpl implements LabelService {
     private final LabelRepository labelRepository;
     private final BoardRepository boardRepository;
     private final BoardPermissionService boardPermissionService;
+    private final CardLabelRepository cardLabelRepository;
 
     @Override
     public List<Label> getLabelsByBoardId(Long boardId) {
@@ -50,7 +53,7 @@ public class LabelServiceImpl implements LabelService {
     @Transactional
     public Label updateLabel(Long labelId, String name, String color, User currentUser) {
         Label label = labelRepository.findById(labelId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy nhãn"));
+                .orElseThrow(() -> new LabelNotFoundException("Không tìm thấy nhãn"));
 
         if (!boardPermissionService.canEditBoard(label.getBoardId(), currentUser.getId())) {
             throw new AccessDeniedException("Bạn không có quyền sửa nhãn trong bảng này");
@@ -65,12 +68,13 @@ public class LabelServiceImpl implements LabelService {
     @Transactional
     public void deleteLabel(Long labelId, User currentUser) {
         Label label = labelRepository.findById(labelId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy nhãn"));
+                .orElseThrow(() -> new LabelNotFoundException("Không tìm thấy nhãn"));
 
         if (!boardPermissionService.canEditBoard(label.getBoardId(), currentUser.getId())) {
             throw new AccessDeniedException("Bạn không có quyền xóa nhãn trong bảng này");
         }
 
+        cardLabelRepository.deleteByLabelId(labelId);
         labelRepository.delete(label);
     }
 }
