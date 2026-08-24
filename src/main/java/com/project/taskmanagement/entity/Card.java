@@ -65,11 +65,17 @@ public class Card {
 
     @Builder.Default
     @OneToMany(mappedBy = "card", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("uploadedAt DESC")
     private List<CardAttachment> attachments = new ArrayList<>();
 
     @Builder.Default
     @OneToMany(mappedBy = "card", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("createdAt ASC")
     private List<CardComment> comments = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "card", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<CardTimeLog> timeLogs = new ArrayList<>();
 
     @PrePersist
     public void prePersist() {
