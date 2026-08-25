@@ -597,6 +597,14 @@ Nhóm theo tính liên kết chức năng, tiếp nối đúng domain quen thu�
 
 > Lưu ý: mô tả gốc #37 trong `sprint3.txt` có đoạn *"Nhãn sau khi gán hiển thị..."* — đây là lỗi copy-paste từ #41, không áp dụng cho #37, bỏ qua khi code.
 
+> ⚠️ **Quy tắc phân quyền RIÊNG cho đúng 4 story này (#37, #41, #42, #43) — KHÁC với mục 7.2 chung**: Cả 4 story đều có nguyên văn câu chữ phân quyền cụ thể trong `sprint3.txt` (PRIVATE → chỉ BoardMember/Admin; GROUP/PUBLIC → chỉ TeamMember thật, không chỉ BoardMember). Đây **chặt hơn** `checkEditPermission` (mục 7.2) — vì board PUBLIC cho phép bất kỳ ai tự join thành BoardMember (mục 7.3), nếu dùng chung `checkEditPermission` sẽ để lọt người ngoài Team can thiệp vào gán thành viên/quản lý nhãn trên board PUBLIC của Team đó.
+>
+> **Quyết định phạm vi (đã xác nhận)**: quy tắc chặt hơn này **CHỈ áp dụng cho đúng 6 method thuộc 4 story trên** (`addCardMember`/`removeCardMember`, `addCardLabel`/`removeCardLabel`, `createLabel`, `updateLabel`/`deleteLabel`) — **KHÔNG** thay đổi `checkEditPermission` chung, không ảnh hưởng các tính năng khác đã merge (Card #32-35, Attachment #36, Comment #49-52, Search #38-40, TimeLog #55) vì các story đó không có câu chữ phân quyền riêng này trong đề bài.
+>
+> **Thiết kế**: thêm method mới `checkCardMemberOrLabelPermission(Long boardId, User user)` trong `BoardPermissionService` (giữ nguyên `checkEditPermission`/`checkAdminPermission` cũ, không sửa) — PRIVATE thì check `existsByBoardIdAndUserId` (như cũ), GROUP/PUBLIC thì check `existsByTeamIdAndUserId` (chặt hơn, bắt buộc là TeamMember thật).
+>
+> **Ghi chú thêm (từ review PR #22)**: badge màu Nhãn hiện đang hardcode chữ trắng (`color: #fff`), vi phạm tương phản AA với các màu nền sáng (Vàng `#ffc107`, Cyan `#0dcaf0`) — đây chính là phạm vi mục 13.3 (đã tạm gác từ Sprint 2.1), giờ cần sửa cụ thể cho đúng chỗ này khi Thành fix PR.
+
 #### D. Hệ thống Thông báo — nền tảng (Thi, lead)
 - **#44** — Thông báo khi thêm thẻ mới
 - **#45** — Thông báo khi di chuyển thẻ
@@ -612,7 +620,7 @@ Nhóm theo tính liên kết chức năng, tiếp nối đúng domain quen thu�
 |---|---|---|
 | **#53** — Due date + nhắc việc | Cần `NotificationService` | Khuyên (sau khi xong nhóm B) |
 | **#54** — Theo dõi thẻ | Cần `NotificationService` | Thành (sau khi xong nhóm C) |
-    
+
 ### 14.7 Lưu ý phụ thuộc & thứ tự triển khai
 
 - Nhóm A, B, C, D **có thể làm song song ngay từ đầu sprint** — không phụ thuộc lẫn nhau
