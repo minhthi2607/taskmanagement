@@ -54,21 +54,40 @@
             <div class="d-flex align-items-center gap-3">
 
                 <!-- Nút Thông báo (Icon quả chuông 🔔) -->
-                <div class="dropdown">
+                <div class="dropdown" sec:authorize="isAuthenticated()">
                     <button class="btn btn-light rounded-circle position-relative p-2" type="button"
                         id="notificationDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Thông báo">
                         <i class="bi bi-bell fs-5"></i>
-                        <span
-                            class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
-                            <span class="visually-hidden">Thông báo mới</span>
+                        <span th:if="${unreadNotificationCount > 0}"
+                            class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                            <span th:text="${unreadNotificationCount}">0</span>
+                            <span class="visually-hidden">Thông báo chưa đọc</span>
                         </span>
                     </button>
-                    <ul class="dropdown-menu dropdown-menu-end shadow p-2" style="width: 300px;"
+                    <ul class="dropdown-menu dropdown-menu-end shadow p-2" style="width: 320px; max-height: 400px; overflow-y: auto;"
                         aria-labelledby="notificationDropdown">
-                        <li>
-                            <h6 class="dropdown-header border-bottom pb-2">Thông báo</h6>
+                        <li class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-1">
+                            <h6 class="dropdown-header p-0 mb-0">Thông báo</h6>
+                            <form th:if="${unreadNotificationCount > 0}" th:action="@{/notifications/read-all}"
+                                method="post" class="m-0">
+                                <button type="submit" class="btn btn-link btn-sm p-0 small text-decoration-none">
+                                    Đánh dấu tất cả đã đọc
+                                </button>
+                            </form>
                         </li>
-                        <li class="py-2 px-3 text-muted small text-center">Không có thông báo mới nào</li>
+                        <li th:if="${userNotifications == null or #lists.isEmpty(userNotifications)}"
+                            class="py-2 px-3 text-muted small text-center">Không có thông báo mới nào</li>
+                        <li th:each="notif, iterStat : ${userNotifications}" th:if="${iterStat.index < 10}">
+                            <form th:action="@{/notifications/{id}/read(id=${notif.id})}" method="post" class="m-0">
+                                <button type="submit"
+                                    class="dropdown-item d-flex flex-column align-items-start gap-1 py-2 text-wrap"
+                                    th:classappend="${notif.isRead} ? 'text-muted' : 'bg-primary-subtle fw-semibold'">
+                                    <span class="small text-wrap text-start" th:text="${notif.content}">Nội dung thông báo</span>
+                                    <span class="text-muted" style="font-size: 0.75rem;"
+                                        th:text="${#temporals.format(notif.createdAt, 'dd/MM HH:mm')}">01/01 00:00</span>
+                                </button>
+                            </form>
+                        </li>
                     </ul>
                 </div>
 

@@ -2,12 +2,14 @@ package com.project.taskmanagement.service.impl;
 
 import com.project.taskmanagement.dto.CardSearchDto;
 import com.project.taskmanagement.dto.CardUpdateDto;
+import com.project.taskmanagement.entity.BoardMember;
 import com.project.taskmanagement.entity.Card;
 import com.project.taskmanagement.entity.CardAttachment;
 import com.project.taskmanagement.entity.CardComment;
 import com.project.taskmanagement.entity.CardMember;
 import com.project.taskmanagement.entity.TaskList;
 import com.project.taskmanagement.entity.User;
+import com.project.taskmanagement.enums.NotificationType;
 import com.project.taskmanagement.enums.Role;
 import com.project.taskmanagement.exception.ResourceNotFoundException;
 import com.project.taskmanagement.repository.BoardMemberRepository;
@@ -18,8 +20,11 @@ import com.project.taskmanagement.repository.CardRepository;
 import com.project.taskmanagement.repository.TaskListRepository;
 import com.project.taskmanagement.service.BoardPermissionService;
 import com.project.taskmanagement.service.CardService;
+import com.project.taskmanagement.service.NotificationService;
 import com.project.taskmanagement.specification.CardSpecification;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.AccessDeniedException;
@@ -40,6 +45,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CardServiceImpl implements CardService {
 
+    private static final Logger logger = LoggerFactory.getLogger(CardServiceImpl.class);
+
     private final CardRepository cardRepository;
     private final CardMemberRepository cardMemberRepository;
     private final CardCommentRepository cardCommentRepository;
@@ -47,6 +54,7 @@ public class CardServiceImpl implements CardService {
     private final TaskListRepository taskListRepository;
     private final BoardMemberRepository boardMemberRepository;
     private final BoardPermissionService boardPermissionService;
+    private final NotificationService notificationService;
 
     @Value("${app.upload-dir:uploads/}")
     private String uploadDirConfig;
@@ -85,7 +93,33 @@ public class CardServiceImpl implements CardService {
                 .createdBy(currentUser.getId())
                 .build();
 
-        return cardRepository.save(card);
+        Card savedCard = cardRepository.save(card);
+
+        notifyCardAdded(taskList, savedCard, currentUser);
+
+        return savedCard;
+    }
+
+    /**
+     * Story #44: Thông báo cho mọi BoardMember (trừ người tạo) khi thêm thẻ mới.
+     * Không được để lỗi gửi thông báo làm hỏng thao tác tạo thẻ chính.
+     */
+    private void notifyCardAdded(TaskList taskList, Card savedCard, User currentUser) {
+        try {
+            String content = currentUser.getDisplayName() + " đã thêm '" + savedCard.getTitle()
+                    + "' vào '" + taskList.getName() + "'";
+            String link = "/board/" + taskList.getBoardId();
+
+            List<BoardMember> boardMembers = boardMemberRepository.findByBoardId(taskList.getBoardId());
+            for (BoardMember boardMember : boardMembers) {
+                if (Objects.equals(boardMember.getUserId(), currentUser.getId())) {
+                    continue;
+                }
+                notificationService.createNotification(boardMember.getUserId(), NotificationType.CARD_ADDED, content, link);
+            }
+        } catch (Exception e) {
+            logger.error("Gửi thông báo CARD_ADDED thất bại cho cardId={}: {}", savedCard.getId(), e.getMessage(), e);
+        }
     }
 
     /**
@@ -125,10 +159,36 @@ public class CardServiceImpl implements CardService {
             throw new IllegalArgumentException("Không thể di chuyển thẻ sang danh sách công việc thuộc bảng khác!");
         }
 
+        // Lấy tên TaskList cũ TRƯỚC khi đổi taskListId — không lấy lại được sau khi đã đổi
+        String oldTaskListName = currentTaskList.getName();
+
         // Convention 6.14: luôn set FK qua field Long, TUYỆT ĐỐI không gọi card.setTaskList(...)
         card.setTaskListId(targetTaskListId);
         card.setPosition(newPosition);
         cardRepository.save(card);
+
+        notifyCardMoved(currentTaskList.getBoardId(), card, oldTaskListName, targetTaskList.getName(), currentUser);
+    }
+
+    /**
+     * Story #45: Thông báo cho mọi BoardMember (trừ người di chuyển) khi di chuyển thẻ sang TaskList khác.
+     */
+    private void notifyCardMoved(Long boardId, Card card, String oldTaskListName, String newTaskListName, User currentUser) {
+        try {
+            String content = currentUser.getDisplayName() + " đã di chuyển thẻ '" + card.getTitle()
+                    + "' từ '" + oldTaskListName + "' sang '" + newTaskListName + "'";
+            String link = "/board/" + boardId;
+
+            List<BoardMember> boardMembers = boardMemberRepository.findByBoardId(boardId);
+            for (BoardMember boardMember : boardMembers) {
+                if (Objects.equals(boardMember.getUserId(), currentUser.getId())) {
+                    continue;
+                }
+                notificationService.createNotification(boardMember.getUserId(), NotificationType.CARD_MOVED, content, link);
+            }
+        } catch (Exception e) {
+            logger.error("Gửi thông báo CARD_MOVED thất bại cho cardId={}: {}", card.getId(), e.getMessage(), e);
+        }
     }
 
     /**
@@ -165,6 +225,25 @@ public class CardServiceImpl implements CardService {
                 .userId(userId)
                 .build();
         cardMemberRepository.save(cardMember);
+
+        notifyCardMemberAssigned(taskList.getBoardId(), card, userId, currentUser);
+    }
+
+    /**
+     * Story #46: Thông báo CHỈ cho người vừa được gán vào thẻ (khác #44/#45 vốn báo cho cả BoardMember).
+     */
+    private void notifyCardMemberAssigned(Long boardId, Card card, Long assignedUserId, User currentUser) {
+        try {
+            if (Objects.equals(assignedUserId, currentUser.getId())) {
+                return;
+            }
+            String content = currentUser.getDisplayName() + " đã gán bạn vào thẻ '" + card.getTitle() + "'";
+            String link = "/board/" + boardId;
+
+            notificationService.createNotification(assignedUserId, NotificationType.CARD_MEMBER_ASSIGNED, content, link);
+        } catch (Exception e) {
+            logger.error("Gửi thông báo CARD_MEMBER_ASSIGNED thất bại cho cardId={}: {}", card.getId(), e.getMessage(), e);
+        }
     }
 
     @Override

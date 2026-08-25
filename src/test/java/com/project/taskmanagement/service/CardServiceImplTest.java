@@ -59,6 +59,9 @@ class CardServiceImplTest {
     @Mock
     private BoardPermissionService boardPermissionService;
 
+    @Mock
+    private NotificationService notificationService;
+
     @InjectMocks
     private CardServiceImpl cardService;
 
