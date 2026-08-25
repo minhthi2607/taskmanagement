@@ -155,7 +155,7 @@ public class CardServiceImpl implements CardService {
     public void addCardMember(Long cardId, Long userId, User currentUser) {
         Card card = getCardById(cardId);
         TaskList taskList = getTaskListOrThrow(card.getTaskListId());
-        boardPermissionService.checkEditPermission(taskList.getBoardId(), currentUser);
+        boardPermissionService.checkCardMemberOrLabelPermission(taskList.getBoardId(), currentUser);
 
         if (!boardMemberRepository.existsByBoardIdAndUserId(taskList.getBoardId(), userId)) {
             throw new IllegalArgumentException("Người dùng phải là thành viên của bảng mới có thể được gán vào thẻ!");
@@ -177,7 +177,7 @@ public class CardServiceImpl implements CardService {
     public void removeCardMember(Long cardId, Long userId, User currentUser) {
         Card card = getCardById(cardId);
         TaskList taskList = getTaskListOrThrow(card.getTaskListId());
-        boardPermissionService.checkEditPermission(taskList.getBoardId(), currentUser);
+        boardPermissionService.checkCardMemberOrLabelPermission(taskList.getBoardId(), currentUser);
 
         CardMember cardMember = cardMemberRepository.findByCardIdAndUserId(cardId, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Thành viên không thuộc thẻ này!"));
@@ -375,7 +375,7 @@ public class CardServiceImpl implements CardService {
     public void addCardLabel(Long cardId, Long labelId, User currentUser) {
         Card card = getCardById(cardId);
         TaskList taskList = getTaskListOrThrow(card.getTaskListId());
-        boardPermissionService.checkEditPermission(taskList.getBoardId(), currentUser);
+        boardPermissionService.checkCardMemberOrLabelPermission(taskList.getBoardId(), currentUser);
 
         if (!labelRepository.existsById(labelId)) {
             throw new IllegalArgumentException("Không tìm thấy nhãn!");
@@ -397,7 +397,7 @@ public class CardServiceImpl implements CardService {
     public void removeCardLabel(Long cardId, Long labelId, User currentUser) {
         Card card = getCardById(cardId);
         TaskList taskList = getTaskListOrThrow(card.getTaskListId());
-        boardPermissionService.checkEditPermission(taskList.getBoardId(), currentUser);
+        boardPermissionService.checkCardMemberOrLabelPermission(taskList.getBoardId(), currentUser);
 
         if (!cardLabelRepository.existsByCardIdAndLabelId(cardId, labelId)) {
             throw new ResourceNotFoundException("Nhãn không thuộc thẻ này!");

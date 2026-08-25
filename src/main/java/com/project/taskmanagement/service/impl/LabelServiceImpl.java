@@ -27,14 +27,20 @@ public class LabelServiceImpl implements LabelService {
 
     @Override
     public List<Label> getLabelsByBoardId(Long boardId) {
-        return labelRepository.findByBoardId(boardId);
+        return labelRepository.findByBoardIdOrderByNameAsc(boardId);
     }
 
     @Override
     @Transactional
     public Label createLabel(Long boardId, String name, String color, User currentUser) {
-        if (!boardPermissionService.canEditBoard(boardId, currentUser.getId())) {
-            throw new AccessDeniedException("Bạn không có quyền thêm nhãn vào bảng này");
+        boardPermissionService.checkCardMemberOrLabelPermission(boardId, currentUser);
+
+        String trimmedName = (name != null) ? name.trim() : "";
+        if (trimmedName.isEmpty()) {
+            throw new IllegalArgumentException("Tên nhãn không được để trống!");
+        }
+        if (trimmedName.length() > 50) {
+            throw new IllegalArgumentException("Tên nhãn không được vượt quá 50 ký tự!");
         }
 
         Board board = boardRepository.findById(boardId)
@@ -55,8 +61,14 @@ public class LabelServiceImpl implements LabelService {
         Label label = labelRepository.findById(labelId)
                 .orElseThrow(() -> new LabelNotFoundException("Không tìm thấy nhãn"));
 
-        if (!boardPermissionService.canEditBoard(label.getBoardId(), currentUser.getId())) {
-            throw new AccessDeniedException("Bạn không có quyền sửa nhãn trong bảng này");
+        boardPermissionService.checkCardMemberOrLabelPermission(label.getBoardId(), currentUser);
+
+        String trimmedName = (name != null) ? name.trim() : "";
+        if (trimmedName.isEmpty()) {
+            throw new IllegalArgumentException("Tên nhãn không được để trống!");
+        }
+        if (trimmedName.length() > 50) {
+            throw new IllegalArgumentException("Tên nhãn không được vượt quá 50 ký tự!");
         }
 
         label.setName(name);
@@ -70,9 +82,7 @@ public class LabelServiceImpl implements LabelService {
         Label label = labelRepository.findById(labelId)
                 .orElseThrow(() -> new LabelNotFoundException("Không tìm thấy nhãn"));
 
-        if (!boardPermissionService.canEditBoard(label.getBoardId(), currentUser.getId())) {
-            throw new AccessDeniedException("Bạn không có quyền xóa nhãn trong bảng này");
-        }
+        boardPermissionService.checkCardMemberOrLabelPermission(label.getBoardId(), currentUser);
 
         cardLabelRepository.deleteByLabelId(labelId);
         labelRepository.delete(label);

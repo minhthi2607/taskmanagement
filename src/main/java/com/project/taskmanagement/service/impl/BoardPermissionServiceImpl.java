@@ -114,4 +114,23 @@ public class BoardPermissionServiceImpl implements BoardPermissionService {
         }
         return boardMemberRepository.existsByBoardIdAndUserId(boardId, userId);
     }
+
+    @Override
+    public void checkCardMemberOrLabelPermission(Long boardId, User user) {
+        Board board = boardRepository.findById(boardId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bảng!"));
+
+        if (board.getVisibility() == BoardVisibility.PRIVATE) {
+            // 1. Với Bảng PRIVATE: Bắt buộc là BoardMember (tức đã được mời vào bảng)
+            if (!boardMemberRepository.existsByBoardIdAndUserId(board.getId(), user.getId())) {
+                throw new AccessDeniedException("Chỉ thành viên hoặc quản trị bảng mới có quyền thao tác!");
+            }
+        } else { 
+            // 2. Với Bảng GROUP hoặc PUBLIC: CHẶT HƠN checkEditPermission cũ
+            // Bắt buộc là TeamMember thật, không chỉ là BoardMember
+            if (!teamMemberRepository.existsByTeamIdAndUserId(board.getTeamId(), user.getId())) {
+                throw new AccessDeniedException("Chỉ thành viên trong nhóm mới có quyền thực hiện thao tác này!");
+            }
+        }
+    }
 }

@@ -256,6 +256,11 @@
                         <div th:each="card : ${list.cards}" class="card border shadow-xs p-2 rounded-2 bg-white hover-shadow transition-all"
                              style="cursor: pointer;" data-bs-toggle="modal" th:data-bs-target="'#cardDetailModal-' + ${card.id}"
                              th:data-card-id="${card.id}" th:data-position="${card.position}">
+                            <div class="d-flex flex-wrap gap-1 mb-1" th:if="${card.labels != null and !#lists.isEmpty(card.labels)}">
+                                <span th:each="cl : ${card.labels}" class="badge rounded-pill"
+                                      th:style="'font-size: 0.6rem; background-color: ' + ${cl.label.color} + '; color: ' + (${cl.label.color == '#ffc107' or cl.label.color == '#0dcaf0'} ? '#000' : '#fff') + ';'"
+                                      th:text="${cl.label.name}">Nhãn</span>
+                            </div>
                             <div class="d-flex justify-content-between align-items-start gap-1">
                                 <span class="fw-semibold text-dark fs-6" th:text="${card.title}">Tiêu đề thẻ</span>
                                 <!-- Story #55: Badge tổng số giờ làm việc (Time Log) -->
@@ -351,7 +356,7 @@
                                            th:value="${lbl.id}" th:id="'lbl-check-' + ${lbl.id}"
                                            th:checked="${searchDto != null and searchDto.labelIds != null and searchDto.labelIds.contains(lbl.id)}">
                                     <label class="form-check-label small d-inline-flex align-items-center" th:for="'lbl-check-' + ${lbl.id}">
-                                        <span class="badge me-1" th:style="'background-color: ' + ${lbl.color} + '; color: #fff;'" th:text="${lbl.name}">Nhãn</span>
+                                        <span class="badge me-1" th:style="'background-color: ' + ${lbl.color} + '; color: ' + (${lbl.color == '#ffc107' or lbl.color == '#0dcaf0'} ? '#000' : '#fff') + ';'" th:text="${lbl.name}">Nhãn</span>
                                     </label>
                                 </div>
                             </div>
@@ -613,13 +618,21 @@
                         <div class="col" th:each="label : ${boardLabels}">
                             <div class="card border shadow-sm">
                                 <div class="card-body p-2 d-flex align-items-center justify-content-between">
-                                    <div class="d-flex align-items-center w-75 gap-2">
+                                    <div class="d-flex align-items-center flex-grow-1 gap-2 me-2">
                                         <div class="rounded-circle shadow-sm flex-shrink-0" th:style="'width: 24px; height: 24px; background-color: ' + ${label.color} + ';'"></div>
                                         <form th:action="@{/label/{id}/update(id=${label.id})}" method="post" class="d-flex align-items-center flex-grow-1 gap-2 m-0">
                                             <input type="hidden" name="boardId" th:value="${board.id}">
-                                            <input type="hidden" name="color" th:value="${label.color}">
+                                            <select name="color" class="form-select form-select-sm border-0 bg-light px-2" required style="width: 110px; flex-shrink: 0;">
+                                                <option value="#0d6efd" th:selected="${label.color == '#0d6efd'}" style="background-color: #0d6efd; color: white;">Xanh dương</option>
+                                                <option value="#198754" th:selected="${label.color == '#198754'}" style="background-color: #198754; color: white;">Xanh lá</option>
+                                                <option value="#dc3545" th:selected="${label.color == '#dc3545'}" style="background-color: #dc3545; color: white;">Đỏ</option>
+                                                <option value="#ffc107" th:selected="${label.color == '#ffc107'}" style="background-color: #ffc107; color: black;">Vàng</option>
+                                                <option value="#0dcaf0" th:selected="${label.color == '#0dcaf0'}" style="background-color: #0dcaf0; color: black;">Xanh lơ</option>
+                                                <option value="#6f42c1" th:selected="${label.color == '#6f42c1'}" style="background-color: #6f42c1; color: white;">Tím</option>
+                                                <option value="#fd7e14" th:selected="${label.color == '#fd7e14'}" style="background-color: #fd7e14; color: white;">Cam</option>
+                                            </select>
                                             <input type="text" name="name" class="form-control form-control-sm border-0 bg-light flex-grow-1 px-2" th:value="${label.name}" required placeholder="Tên nhãn..." style="min-width: 0;">
-                                            <button type="submit" class="btn btn-sm btn-outline-primary" title="Lưu tên"><i class="bi bi-check-lg"></i></button>
+                                            <button type="submit" class="btn btn-sm btn-outline-primary" title="Lưu"><i class="bi bi-check-lg"></i></button>
                                         </form>
                                     </div>
                                     <form th:action="@{/label/{id}/delete(id=${label.id})}" method="post" class="m-0" onsubmit="return confirm('Bạn có chắc chắn muốn xóa nhãn này? Nó sẽ bị gỡ khỏi tất cả các thẻ đang sử dụng.');">
@@ -678,25 +691,13 @@
                         </div>
                         <div class="modal-body p-4">
 
-                            <!-- b. Mô tả -->
-                            <div class="mb-4">
-                                <h6 class="fw-bold text-secondary"><i class="bi bi-text-paragraph me-2"></i>Mô tả</h6>
-                                <form th:if="${canEditBoard}" th:action="@{/card/{id}/update(id=${card.id})}" method="post">
-                                    <textarea name="description" class="form-control form-control-sm mb-2" rows="3"
-                                              placeholder="Thêm mô tả chi tiết cho thẻ..." th:text="${card.description}"></textarea>
-                                    <button type="submit" class="btn btn-primary btn-sm px-3">Lưu</button>
-                                </form>
-                                <p th:unless="${canEditBoard}" class="mb-0 text-secondary"
-                                   th:text="${card.description != null and !#strings.isEmpty(card.description)} ? ${card.description} : 'Chưa có mô tả'">Mô tả</p>
-                            </div>
-
                             <!-- b2. Nhãn (Story #41) -->
                             <div class="mb-4">
                                 <h6 class="fw-bold text-secondary"><i class="bi bi-tags me-2"></i>Nhãn</h6>
                                 <div class="d-flex flex-wrap gap-1 mb-2">
                                     <span th:each="cardLabel : ${card.labels}" 
                                           class="badge rounded-pill d-inline-flex align-items-center justify-content-between" 
-                                          th:style="'background-color: ' + ${cardLabel.label.color} + '; color: #fff; padding-right: 0.25rem;'">
+                                          th:style="'background-color: ' + ${cardLabel.label.color} + '; color: ' + (${cardLabel.label.color == '#ffc107' or cardLabel.label.color == '#0dcaf0'} ? '#000' : '#fff') + '; padding-right: 0.25rem;'">
                                         <span class="px-1" th:text="${cardLabel.label.name}">Tên nhãn</span>
                                         <form th:if="${canEditBoard}" th:action="@{/card/{cardId}/labels/{labelId}/remove(cardId=${card.id}, labelId=${cardLabel.label.id})}" method="post" class="m-0 ms-1">
                                             <button type="submit" class="btn-close btn-close-white" style="font-size: 0.5rem;" aria-label="Gỡ nhãn"></button>
@@ -713,7 +714,7 @@
                                             <form th:action="@{/card/{cardId}/labels/add(cardId=${card.id})}" method="post" class="m-0 mb-1">
                                                 <input type="hidden" name="labelId" th:value="${boardLabel.id}">
                                                 <button type="submit" class="dropdown-item rounded d-flex align-items-center justify-content-between p-1">
-                                                    <span class="badge w-100 text-start py-2" th:style="'background-color: ' + ${boardLabel.color} + '; color: #fff;'" th:text="${boardLabel.name}">Nhãn</span>
+                                                    <span class="badge w-100 text-start py-2" th:style="'background-color: ' + ${boardLabel.color} + '; color: ' + (${boardLabel.color == '#ffc107' or boardLabel.color == '#0dcaf0'} ? '#000' : '#fff') + ';'" th:text="${boardLabel.name}">Nhãn</span>
                                                 </button>
                                             </form>
                                         </li>
@@ -722,6 +723,18 @@
                                         </li>
                                     </ul>
                                 </div>
+                            </div>
+
+                            <!-- b. Mô tả -->
+                            <div class="mb-4">
+                                <h6 class="fw-bold text-secondary"><i class="bi bi-text-paragraph me-2"></i>Mô tả</h6>
+                                <form th:if="${canEditBoard}" th:action="@{/card/{id}/update(id=${card.id})}" method="post">
+                                    <textarea name="description" class="form-control form-control-sm mb-2" rows="3"
+                                              placeholder="Thêm mô tả chi tiết cho thẻ..." th:text="${card.description}"></textarea>
+                                    <button type="submit" class="btn btn-primary btn-sm px-3">Lưu</button>
+                                </form>
+                                <p th:unless="${canEditBoard}" class="mb-0 text-secondary"
+                                   th:text="${card.description != null and !#strings.isEmpty(card.description)} ? ${card.description} : 'Chưa có mô tả'">Mô tả</p>
                             </div>
 
                             <!-- c. Thành viên -->

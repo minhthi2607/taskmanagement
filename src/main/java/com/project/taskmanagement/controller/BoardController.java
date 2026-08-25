@@ -10,7 +10,7 @@ import com.project.taskmanagement.entity.Card;
 import com.project.taskmanagement.entity.TaskList;
 import com.project.taskmanagement.entity.User;
 import com.project.taskmanagement.enums.BoardVisibility;
-import com.project.taskmanagement.repository.LabelRepository;
+import com.project.taskmanagement.service.LabelService;
 import com.project.taskmanagement.service.BoardMemberService;
 import com.project.taskmanagement.service.BoardPermissionService;
 import com.project.taskmanagement.service.BoardService;
@@ -40,7 +40,7 @@ public class BoardController {
     private final TaskListService taskListService;
     private final CardService cardService;
     private final CardTimeLogService cardTimeLogService;
-    private final LabelRepository labelRepository;
+    private final LabelService labelService;
 
     /**
      * Story #20: Tạo mới Bảng công việc từ DTO (Task B)
@@ -140,7 +140,7 @@ public class BoardController {
             model.addAttribute("canEditBoard", canEditBoard);
             model.addAttribute("taskLists", taskLists);
             model.addAttribute("allVisibilities", BoardVisibility.values());
-            model.addAttribute("boardLabels", labelRepository.findByBoardId(boardId));
+            model.addAttribute("boardLabels", labelService.getLabelsByBoardId(boardId));
             model.addAttribute("boardMembers", boardMemberService.getBoardMembers(boardId));
             model.addAttribute("currentUser", currentUser);
             model.addAttribute("searchDto", searchDto != null ? searchDto : new CardSearchDto());
