@@ -399,6 +399,12 @@ public class CardServiceImpl implements CardService {
             throw new IllegalArgumentException("Dung lượng tệp đính kèm không được vượt quá 10MB!");
         }
 
+        // Kiểm tra MIME type
+        String contentType = file.getContentType();
+        if (contentType == null || contentType.toLowerCase().contains("text/html") || contentType.toLowerCase().contains("javascript")) {
+            throw new IllegalArgumentException("MIME type không hợp lệ hoặc không an toàn!");
+        }
+
         Card card = getCardById(cardId);
         TaskList taskList = getTaskListOrThrow(card.getTaskListId());
         boardPermissionService.checkEditPermission(taskList.getBoardId(), currentUser);
@@ -409,7 +415,19 @@ public class CardServiceImpl implements CardService {
         String fileExtension = "";
         int extIndex = originalFileName.lastIndexOf(".");
         if (extIndex >= 0) {
-            fileExtension = originalFileName.substring(extIndex);
+            fileExtension = originalFileName.substring(extIndex).toLowerCase();
+        }
+
+        // Kiểm tra phần mở rộng tệp
+        java.util.List<String> allowedExtensions = java.util.Arrays.asList(".pdf", ".docx", ".xlsx", ".pptx", ".txt", ".jpg", ".jpeg", ".png", ".webp", ".zip", ".rar");
+        java.util.List<String> blockedExtensions = java.util.Arrays.asList(".html", ".htm", ".svg", ".js", ".jsp", ".exe", ".sh", ".bat");
+
+        if (blockedExtensions.contains(fileExtension)) {
+            throw new IllegalArgumentException("Định dạng tệp này không được phép tải lên để đảm bảo an toàn!");
+        }
+        
+        if (!allowedExtensions.contains(fileExtension)) {
+            throw new IllegalArgumentException("Định dạng tệp không được hỗ trợ! Vui lòng tải lên ảnh, tài liệu văn phòng hoặc file nén.");
         }
 
         String storedFileName = UUID.randomUUID().toString() + fileExtension;
