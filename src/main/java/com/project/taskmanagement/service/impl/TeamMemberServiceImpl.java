@@ -5,6 +5,7 @@ import com.project.taskmanagement.entity.Team;
 import com.project.taskmanagement.entity.TeamMember;
 import com.project.taskmanagement.entity.User;
 import com.project.taskmanagement.enums.InvitationStatus;
+import com.project.taskmanagement.enums.NotificationType;
 import com.project.taskmanagement.enums.Role;
 import com.project.taskmanagement.exception.ResourceNotFoundException;
 import com.project.taskmanagement.repository.InvitationRepository;
@@ -12,6 +13,7 @@ import com.project.taskmanagement.repository.TeamMemberRepository;
 import com.project.taskmanagement.repository.TeamRepository;
 import com.project.taskmanagement.repository.UserRepository;
 import com.project.taskmanagement.service.EmailService;
+import com.project.taskmanagement.service.NotificationService;
 import com.project.taskmanagement.service.TeamMemberService;
 import com.project.taskmanagement.service.BoardMemberSyncService;
 import com.project.taskmanagement.service.TeamService;
@@ -37,6 +39,7 @@ public class TeamMemberServiceImpl implements TeamMemberService {
     private final TeamService teamService;
     private final EmailService emailService;
     private final BoardMemberSyncService boardMemberSyncService;
+    private final NotificationService notificationService;
 
     @Override
     @Transactional
@@ -126,12 +129,29 @@ public class TeamMemberServiceImpl implements TeamMemberService {
                     .joinedAt(LocalDateTime.now())
                     .build();
             teamMemberRepository.save(newMember);
+            notifyTeamMemberAdded(invitation.getTeamId(), currentUser.getId());
         }
 
         invitation.setStatus(InvitationStatus.ACCEPTED);
         invitationRepository.save(invitation);
         if (invitation.getTeamId() != null) {
             boardMemberSyncService.addMemberToAllGroupBoardsOfTeam(invitation.getTeamId(), currentUser.getId());
+        }
+    }
+
+    /**
+     * Story #48: Thông báo cho người vừa được mời khi họ chấp nhận lời mời tham gia nhóm.
+     * Không được để lỗi gửi thông báo làm hỏng thao tác chấp nhận lời mời chính.
+     */
+    private void notifyTeamMemberAdded(Long teamId, Long newMemberUserId) {
+        try {
+            Team team = teamRepository.findById(teamId).orElse(null);
+            String teamName = team != null ? team.getName() : "";
+            String content = "Bạn đã được thêm vào nhóm '" + teamName + "'";
+            String link = "/team/" + teamId;
+            notificationService.createNotification(newMemberUserId, NotificationType.TEAM_MEMBER_ADDED, content, link);
+        } catch (Exception e) {
+            log.error("Gửi thông báo TEAM_MEMBER_ADDED thất bại cho teamId={}, userId={}: {}", teamId, newMemberUserId, e.getMessage(), e);
         }
     }
 
