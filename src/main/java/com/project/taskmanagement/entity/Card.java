@@ -77,6 +77,10 @@ public class Card {
     @OneToMany(mappedBy = "card", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CardTimeLog> timeLogs = new ArrayList<>();
 
+    @Builder.Default
+    @OneToMany(mappedBy = "card", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<CardWatcher> watchers = new ArrayList<>();
+
     @PrePersist
     public void prePersist() {
         if (createdAt == null) {

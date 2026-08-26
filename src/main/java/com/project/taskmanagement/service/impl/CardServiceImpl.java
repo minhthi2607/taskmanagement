@@ -23,6 +23,7 @@ import com.project.taskmanagement.repository.CardLabelRepository;
 import com.project.taskmanagement.repository.TaskListRepository;
 import com.project.taskmanagement.service.BoardPermissionService;
 import com.project.taskmanagement.service.CardService;
+import com.project.taskmanagement.service.CardWatcherService;
 import com.project.taskmanagement.service.NotificationService;
 import com.project.taskmanagement.specification.CardSpecification;
 import lombok.RequiredArgsConstructor;
@@ -58,6 +59,7 @@ public class CardServiceImpl implements CardService {
     private final BoardMemberRepository boardMemberRepository;
     private final BoardPermissionService boardPermissionService;
     private final NotificationService notificationService;
+    private final CardWatcherService cardWatcherService;
     private final LabelRepository labelRepository;
     private final CardLabelRepository cardLabelRepository;
 
@@ -127,6 +129,24 @@ public class CardServiceImpl implements CardService {
         }
     }
 
+    private void notifyCardWatchers(Card card, String actionDescription, User currentUser) {
+        try {
+            Long boardId = getTaskListOrThrow(card.getTaskListId()).getBoardId();
+            String content = currentUser.getDisplayName() + " " + actionDescription + " '" + card.getTitle() + "'";
+            String link = "/board/" + boardId;
+
+            java.util.List<com.project.taskmanagement.entity.CardWatcher> watchers = cardWatcherService.getWatchers(card.getId());
+            for (com.project.taskmanagement.entity.CardWatcher watcher : watchers) {
+                if (Objects.equals(watcher.getUserId(), currentUser.getId())) {
+                    continue;
+                }
+                notificationService.createNotification(watcher.getUserId(), NotificationType.CARD_WATCH_ACTIVITY, content, link);
+            }
+        } catch (Exception e) {
+            logger.error("Gửi thông báo CARD_WATCH_ACTIVITY thất bại cho cardId={}: {}", card.getId(), e.getMessage(), e);
+        }
+    }
+
     /**
      * Story #33: Đổi vị trí Card trong cùng TaskList
      */
@@ -173,6 +193,7 @@ public class CardServiceImpl implements CardService {
         cardRepository.save(card);
 
         notifyCardMoved(currentTaskList.getBoardId(), card, oldTaskListName, targetTaskList.getName(), currentUser);
+        notifyCardWatchers(card, "đã di chuyển thẻ từ '" + oldTaskListName + "' sang '" + targetTaskList.getName() + "'", currentUser);
     }
 
     /**
@@ -207,7 +228,10 @@ public class CardServiceImpl implements CardService {
         boardPermissionService.checkEditPermission(taskList.getBoardId(), currentUser);
 
         card.setDescription(dto != null ? dto.getDescription() : null);
-        return cardRepository.save(card);
+        Card savedCard = cardRepository.save(card);
+        
+        notifyCardWatchers(savedCard, "đã cập nhật mô tả của thẻ", currentUser);
+        return savedCard;
     }
 
     @Override
@@ -232,6 +256,7 @@ public class CardServiceImpl implements CardService {
         cardMemberRepository.save(cardMember);
 
         notifyCardMemberAssigned(taskList.getBoardId(), card, userId, currentUser);
+        notifyCardWatchers(card, "đã thêm thành viên vào thẻ", currentUser);
     }
 
     /**
@@ -287,6 +312,8 @@ public class CardServiceImpl implements CardService {
                 .content(trimmedContent)
                 .build();
         cardCommentRepository.save(comment);
+        
+        notifyCardWatchers(card, "đã bình luận vào thẻ", currentUser);
     }
 
 
@@ -410,7 +437,10 @@ public class CardServiceImpl implements CardService {
                 .uploadedBy(currentUser.getId())
                 .build();
 
-        return cardAttachmentRepository.save(attachment);
+        CardAttachment savedAttachment = cardAttachmentRepository.save(attachment);
+        notifyCardWatchers(card, "đã đính kèm tệp '" + originalFileName + "' vào thẻ", currentUser);
+        
+        return savedAttachment;
     }
 
     /**

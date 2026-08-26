@@ -690,6 +690,17 @@
                             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body p-4">
+                            
+                            <!-- a. Hành động thẻ (Story #54: Theo dõi thẻ) -->
+                            <div class="d-flex justify-content-end align-items-center mb-3 pb-2 border-bottom">
+                                <button type="button" class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1 toggle-watch-btn" 
+                                        th:data-card-id="${card.id}" 
+                                        th:with="isWatching=${card.watchers.![userId].contains(currentUser.id)}" 
+                                        th:classappend="${isWatching} ? 'btn-primary text-white border-primary active' : ''">
+                                    <i class="bi" th:classappend="${isWatching} ? 'bi-eye-fill' : 'bi-eye'"></i>
+                                    <span class="watch-text" th:text="${isWatching} ? 'Đang theo dõi' : 'Theo dõi'">Theo dõi</span>
+                                </button>
+                            </div>
 
                             <!-- b2. Nhãn (Story #41) -->
                             <div class="mb-4">

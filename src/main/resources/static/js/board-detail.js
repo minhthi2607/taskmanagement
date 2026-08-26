@@ -240,4 +240,45 @@ $(document).ready(function () {
             }
         });
     });
+
+    // Story #54: Bật/tắt theo dõi thẻ (Watch Card)
+    document.querySelectorAll('.toggle-watch-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const cardId = this.getAttribute('data-card-id');
+            const url = '/card/' + cardId + '/watch/toggle';
+            
+            const ajaxHeaders = { 'X-Requested-With': 'XMLHttpRequest' };
+            if (csrfHeader && csrfToken) {
+                ajaxHeaders[csrfHeader] = csrfToken;
+            }
+
+            fetch(url, {
+                method: 'POST',
+                headers: ajaxHeaders
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const icon = this.querySelector('i');
+                    const text = this.querySelector('.watch-text');
+                    if (data.isWatching) {
+                        this.classList.add('btn-primary', 'text-white', 'border-primary', 'active');
+                        this.classList.remove('btn-outline-secondary');
+                        icon.classList.remove('bi-eye');
+                        icon.classList.add('bi-eye-fill');
+                        text.textContent = 'Đang theo dõi';
+                    } else {
+                        this.classList.remove('btn-primary', 'text-white', 'border-primary', 'active');
+                        this.classList.add('btn-outline-secondary');
+                        icon.classList.remove('bi-eye-fill');
+                        icon.classList.add('bi-eye');
+                        text.textContent = 'Theo dõi';
+                    }
+                } else if (data.error) {
+                    alert(data.error);
+                }
+            })
+            .catch(err => console.error('Lỗi khi theo dõi thẻ:', err));
+        });
+    });
 });
