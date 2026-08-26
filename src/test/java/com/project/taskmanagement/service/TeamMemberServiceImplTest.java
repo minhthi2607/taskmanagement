@@ -3,6 +3,7 @@ package com.project.taskmanagement.service;
 import com.project.taskmanagement.entity.Team;
 import com.project.taskmanagement.entity.TeamMember;
 import com.project.taskmanagement.entity.User;
+import com.project.taskmanagement.enums.NotificationType;
 import com.project.taskmanagement.enums.Role;
 import com.project.taskmanagement.repository.InvitationRepository;
 import com.project.taskmanagement.repository.TeamMemberRepository;
@@ -20,6 +21,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -45,6 +48,9 @@ class TeamMemberServiceImplTest {
 
     @Mock
     private BoardMemberSyncService boardMemberSyncService;
+
+    @Mock
+    private NotificationService notificationService;
 
     @InjectMocks
     private TeamMemberServiceImpl teamMemberService;
@@ -88,10 +94,14 @@ class TeamMemberServiceImplTest {
         when(invitationRepository.findByToken("abc-token")).thenReturn(Optional.of(invitation));
         when(teamMemberRepository.existsByTeamIdAndUserId(10L, 1L)).thenReturn(false);
 
+        when(teamRepository.findById(10L)).thenReturn(Optional.of(testTeam));
+
         teamMemberService.acceptInvitation("abc-token", currentUser);
 
         verify(teamMemberRepository).save(any(TeamMember.class));
         verify(boardMemberSyncService).addMemberToAllGroupBoardsOfTeam(10L, 1L);
         verifyNoMoreInteractions(boardMemberSyncService);
+        verify(notificationService, times(1)).createNotification(
+                eq(1L), eq(NotificationType.TEAM_MEMBER_ADDED), anyString(), anyString());
     }
 }
