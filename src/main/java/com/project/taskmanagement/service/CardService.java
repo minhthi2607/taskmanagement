@@ -38,6 +38,10 @@ public interface CardService {
      */
     void addCardComment(Long cardId, String content, User currentUser);
 
+    void addCardLabel(Long cardId, Long labelId, User currentUser);
+
+    void removeCardLabel(Long cardId, Long labelId, User currentUser);
+
     /**
      * Story #38, #39, #40: Tìm kiếm & Lọc Card trong Board qua DTO và JPA Specification (Task B)
      */

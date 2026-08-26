@@ -36,4 +36,9 @@ public interface BoardPermissionService {
      * Trả về true nếu user có quyền SỬA Board (đã là BoardMember).
      */
     boolean canEditBoard(Long boardId, Long userId);
+
+    /**
+     * Kiểm tra quyền thao tác trên CardMember và Label (Story #37, #43).
+     */
+    void checkCardMemberOrLabelPermission(Long boardId, User user);
 }
