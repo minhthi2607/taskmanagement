@@ -9,5 +9,5 @@ import java.util.List;
 @Repository
 public interface LabelRepository extends JpaRepository<Label, Long> {
 
-    List<Label> findByBoardId(Long boardId);
+    List<Label> findByBoardIdOrderByNameAsc(Long boardId);
 }

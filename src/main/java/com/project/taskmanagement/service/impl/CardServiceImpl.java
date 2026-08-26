@@ -6,6 +6,7 @@ import com.project.taskmanagement.entity.BoardMember;
 import com.project.taskmanagement.entity.Card;
 import com.project.taskmanagement.entity.CardAttachment;
 import com.project.taskmanagement.entity.CardComment;
+import com.project.taskmanagement.entity.CardLabel;
 import com.project.taskmanagement.entity.CardMember;
 import com.project.taskmanagement.entity.TaskList;
 import com.project.taskmanagement.entity.User;
@@ -17,6 +18,8 @@ import com.project.taskmanagement.repository.CardAttachmentRepository;
 import com.project.taskmanagement.repository.CardCommentRepository;
 import com.project.taskmanagement.repository.CardMemberRepository;
 import com.project.taskmanagement.repository.CardRepository;
+import com.project.taskmanagement.repository.LabelRepository;
+import com.project.taskmanagement.repository.CardLabelRepository;
 import com.project.taskmanagement.repository.TaskListRepository;
 import com.project.taskmanagement.service.BoardPermissionService;
 import com.project.taskmanagement.service.CardService;
@@ -55,6 +58,8 @@ public class CardServiceImpl implements CardService {
     private final BoardMemberRepository boardMemberRepository;
     private final BoardPermissionService boardPermissionService;
     private final NotificationService notificationService;
+    private final LabelRepository labelRepository;
+    private final CardLabelRepository cardLabelRepository;
 
     @Value("${app.upload-dir:uploads/}")
     private String uploadDirConfig;
@@ -210,7 +215,7 @@ public class CardServiceImpl implements CardService {
     public void addCardMember(Long cardId, Long userId, User currentUser) {
         Card card = getCardById(cardId);
         TaskList taskList = getTaskListOrThrow(card.getTaskListId());
-        boardPermissionService.checkEditPermission(taskList.getBoardId(), currentUser);
+        boardPermissionService.checkCardMemberOrLabelPermission(taskList.getBoardId(), currentUser);
 
         if (!boardMemberRepository.existsByBoardIdAndUserId(taskList.getBoardId(), userId)) {
             throw new IllegalArgumentException("Người dùng phải là thành viên của bảng mới có thể được gán vào thẻ!");
@@ -251,7 +256,7 @@ public class CardServiceImpl implements CardService {
     public void removeCardMember(Long cardId, Long userId, User currentUser) {
         Card card = getCardById(cardId);
         TaskList taskList = getTaskListOrThrow(card.getTaskListId());
-        boardPermissionService.checkEditPermission(taskList.getBoardId(), currentUser);
+        boardPermissionService.checkCardMemberOrLabelPermission(taskList.getBoardId(), currentUser);
 
         CardMember cardMember = cardMemberRepository.findByCardIdAndUserId(cardId, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Thành viên không thuộc thẻ này!"));
@@ -442,6 +447,41 @@ public class CardServiceImpl implements CardService {
         }
 
         cardAttachmentRepository.delete(attachment);
+    }
+
+    @Override
+    @Transactional
+    public void addCardLabel(Long cardId, Long labelId, User currentUser) {
+        Card card = getCardById(cardId);
+        TaskList taskList = getTaskListOrThrow(card.getTaskListId());
+        boardPermissionService.checkCardMemberOrLabelPermission(taskList.getBoardId(), currentUser);
+
+        if (!labelRepository.existsById(labelId)) {
+            throw new IllegalArgumentException("Không tìm thấy nhãn!");
+        }
+
+        if (cardLabelRepository.existsByCardIdAndLabelId(cardId, labelId)) {
+            throw new IllegalArgumentException("Nhãn đã được gán vào thẻ này!");
+        }
+
+        CardLabel cardLabel = CardLabel.builder()
+                .cardId(cardId)
+                .labelId(labelId)
+                .build();
+        cardLabelRepository.save(cardLabel);
+    }
+
+    @Override
+    @Transactional
+    public void removeCardLabel(Long cardId, Long labelId, User currentUser) {
+        Card card = getCardById(cardId);
+        TaskList taskList = getTaskListOrThrow(card.getTaskListId());
+        boardPermissionService.checkCardMemberOrLabelPermission(taskList.getBoardId(), currentUser);
+
+        if (!cardLabelRepository.existsByCardIdAndLabelId(cardId, labelId)) {
+            throw new ResourceNotFoundException("Nhãn không thuộc thẻ này!");
+        }
+        cardLabelRepository.deleteByCardIdAndLabelId(cardId, labelId);
     }
 
     @Override
