@@ -85,7 +85,7 @@ class TeamMemberServiceImplTest {
     void acceptInvitation_DelegatesToSyncServiceOnly() {
         com.project.taskmanagement.entity.Invitation invitation = com.project.taskmanagement.entity.Invitation.builder()
                 .teamId(10L)
-                .email("newmember@example.com")
+                .email(currentUser.getEmail())
                 .role(Role.MEMBER)
                 .token("abc-token")
                 .status(com.project.taskmanagement.enums.InvitationStatus.PENDING)

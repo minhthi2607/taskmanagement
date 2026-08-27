@@ -6,6 +6,7 @@ import com.project.taskmanagement.dto.CardUpdateDto;
 import com.project.taskmanagement.entity.Card;
 import com.project.taskmanagement.entity.User;
 import com.project.taskmanagement.service.CardService;
+import com.project.taskmanagement.service.CardWatcherService;
 import com.project.taskmanagement.service.TaskListService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +15,9 @@ import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.http.ResponseEntity;
+import java.util.Map;
+import java.util.HashMap;
 
 @Controller
 @RequiredArgsConstructor
@@ -21,6 +25,7 @@ public class CardController {
 
     private final CardService cardService;
     private final TaskListService taskListService;
+    private final CardWatcherService cardWatcherService;
 
     /**
      * Story #32: Tạo mới Card trong TaskList
@@ -392,5 +397,26 @@ public class CardController {
         }
 
         return (boardId != null) ? "redirect:/board/" + boardId : "redirect:/";
+    }
+
+    /**
+     * Story #54: Bật/Tắt theo dõi thẻ (Watch Card)
+     */
+    @PostMapping("/card/{cardId}/watch/toggle")
+    @ResponseBody
+    public ResponseEntity<?> toggleWatchCard(
+            @PathVariable("cardId") Long cardId,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        if (principal == null || principal.getUser() == null) {
+            return ResponseEntity.status(401).body(Map.of("error", "Bạn cần đăng nhập"));
+        }
+
+        try {
+            boolean isWatching = cardWatcherService.toggleWatchCard(cardId, principal.getUser());
+            return ResponseEntity.ok(Map.of("success", true, "isWatching", isWatching));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 }

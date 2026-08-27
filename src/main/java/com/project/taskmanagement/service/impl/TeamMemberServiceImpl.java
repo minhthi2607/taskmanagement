@@ -21,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -118,6 +119,11 @@ public class TeamMemberServiceImpl implements TeamMemberService {
 
         if (invitation.getStatus() != InvitationStatus.PENDING) {
             throw new IllegalArgumentException("Lời mời này đã được chấp nhận hoặc không còn hiệu lực!");
+        }
+
+        if (invitation.getEmail() != null && !invitation.getEmail().equalsIgnoreCase(currentUser.getEmail())) {
+            throw new AccessDeniedException("Lời mời này được gửi đến địa chỉ " + invitation.getEmail() 
+                    + ". Vui lòng đăng nhập đúng tài khoản để chấp nhận lời mời!");
         }
 
         // Kiểm tra xem đã là thành viên nhóm chưa

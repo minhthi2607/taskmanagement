@@ -113,6 +113,11 @@ public class BoardMemberServiceImpl implements BoardMemberService {
             throw new IllegalArgumentException("Lời mời này đã được chấp nhận hoặc không còn hiệu lực!");
         }
 
+        if (invitation.getEmail() != null && !invitation.getEmail().equalsIgnoreCase(currentUser.getEmail())) {
+            throw new AccessDeniedException("Lời mời này được gửi đến địa chỉ " + invitation.getEmail() 
+                    + ". Vui lòng đăng nhập đúng tài khoản để chấp nhận lời mời!");
+        }
+
         if (invitation.getBoardId() == null) {
             throw new IllegalArgumentException("Lời mời này không phải là lời mời tham gia bảng!");
         }
