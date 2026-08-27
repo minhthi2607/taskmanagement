@@ -1,9 +1,7 @@
 package com.project.taskmanagement.dto;
 
 import lombok.*;
-import org.springframework.format.annotation.DateTimeFormat;
 
-import java.time.LocalDateTime;
 @Getter
 @Setter
 @NoArgsConstructor
@@ -12,7 +10,4 @@ import java.time.LocalDateTime;
 public class CardUpdateDto {
 
     private String description;
-    @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm")
-    private LocalDateTime dueDate;
-    private Integer reminderMinutes;
 }
