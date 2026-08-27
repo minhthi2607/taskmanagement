@@ -149,18 +149,18 @@
                                 </div>
                                 <div>
                                     <span class="fw-semibold text-dark d-block" th:text="${member.user.displayName}">Tên người dùng</span>
-                                    <span th:if="${member.user.id == currentUser.id}" class="badge bg-primary-subtle text-primary mt-1" style="font-size: 0.7rem;">Bạn</span>
+                                    <span th:if="${currentUser != null and member.user.id == currentUser.id}" class="badge bg-primary-subtle text-primary mt-1" style="font-size: 0.7rem;">Bạn</span>
                                 </div>
                             </div>
                         </td>
                         <td class="text-secondary" th:text="${member.user.email}">email@example.com</td>
                         <td>
-                            <span th:if="${!isBoardAdmin or member.user.id == currentUser.id}" 
+                            <span th:if="${currentUser == null or !isBoardAdmin or member.user.id == currentUser.id}"
                                   class="badge px-2 py-1" 
                                   th:classappend="${member.role.name() == 'ADMIN'} ? 'bg-danger-subtle text-danger' : 'bg-info-subtle text-info'" 
                                   th:text="${member.role.name() == 'ADMIN'} ? 'Quản trị viên' : 'Thành viên'">Vai trò</span>
                                   
-                            <form th:if="${isBoardAdmin and member.user.id != currentUser.id}" 
+                            <form th:if="${currentUser != null and isBoardAdmin and member.user.id != currentUser.id}"
                                   th:action="@{/board/{boardId}/members/{userId}/role(boardId=${board.id}, userId=${member.user.id})}" 
                                   method="post" class="m-0">
                                 <select name="role" class="form-select form-select-sm w-auto shadow-none" onchange="this.form.submit()">
@@ -695,7 +695,7 @@
                             <div class="d-flex justify-content-end align-items-center mb-3 pb-2 border-bottom">
                                 <button type="button" class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1 toggle-watch-btn" 
                                         th:data-card-id="${card.id}" 
-                                        th:with="isWatching=${card.watchers.![userId].contains(currentUser.id)}" 
+                                        th:with="isWatching=${currentUser != null and card.watchers.![userId].contains(currentUser.id)}"
                                         th:classappend="${isWatching} ? 'btn-primary text-white border-primary active' : ''">
                                     <i class="bi" th:classappend="${isWatching} ? 'bi-eye-fill' : 'bi-eye'"></i>
                                     <span class="watch-text" th:text="${isWatching} ? 'Đang theo dõi' : 'Theo dõi'">Theo dõi</span>

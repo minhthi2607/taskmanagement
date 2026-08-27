@@ -1,6 +1,7 @@
 package com.project.taskmanagement.controller;
 
 import com.project.taskmanagement.config.UserPrincipal;
+import com.project.taskmanagement.exception.SafeRedirectHelper;
 import com.project.taskmanagement.service.NotificationService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +16,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class NotificationController {
 
     private final NotificationService notificationService;
+    private final SafeRedirectHelper safeRedirectHelper;
 
     /**
      * Story #44-48: Đánh dấu 1 thông báo đã đọc, điều hướng tới link của thông báo đó
@@ -39,8 +41,7 @@ public class NotificationController {
             }
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
-            String referer = request.getHeader("Referer");
-            return "redirect:" + (referer != null ? referer : "/");
+            return safeRedirectHelper.getSafeRedirectUrl(request, "/");
         }
 
         return "redirect:" + link;
@@ -60,13 +61,12 @@ public class NotificationController {
             return "redirect:/auth/login";
         }
 
-        String referer = request.getHeader("Referer");
         try {
             notificationService.markAllAsRead(principal.getUser());
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         }
 
-        return "redirect:" + (referer != null ? referer : "/");
+        return safeRedirectHelper.getSafeRedirectUrl(request, "/");
     }
 }
