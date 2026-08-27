@@ -234,6 +234,24 @@ public class CardServiceImpl implements CardService {
         return savedCard;
     }
 
+    /**
+     * Story #53: Cập nhật Hạn chót & Nhắc việc cho Card
+     */
+    @Override
+    @Transactional
+    public Card updateCardDueDate(Long cardId, java.time.LocalDateTime dueDate, Integer reminderMinutes, User currentUser) {
+        Card card = getCardById(cardId);
+        TaskList taskList = getTaskListOrThrow(card.getTaskListId());
+        boardPermissionService.checkEditPermission(taskList.getBoardId(), currentUser);
+
+        card.setDueDate(dueDate);
+        card.setReminderMinutes(dueDate != null ? reminderMinutes : null);
+        card.setReminderSentAt(null);
+
+        return cardRepository.save(card);
+    }
+
+
     @Override
     @Transactional
     public void addCardMember(Long cardId, Long userId, User currentUser) {

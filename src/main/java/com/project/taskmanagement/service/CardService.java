@@ -32,6 +32,10 @@ public interface CardService {
     void addCardMember(Long cardId, Long userId, User currentUser);
 
     void removeCardMember(Long cardId, Long userId, User currentUser);
+    /**
+     * Story #53: Cập nhật Hạn chót & Nhắc việc cho Card
+     */
+    Card updateCardDueDate(Long cardId, java.time.LocalDateTime dueDate, Integer reminderMinutes, User currentUser);
 
     /**
      * Story #49: Thêm bình luận vào thẻ
