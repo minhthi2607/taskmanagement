@@ -270,6 +270,19 @@
                                     <i class="bi bi-clock-history me-1"></i><span th:text="${cardTotalHoursMap.get(card.id)} + 'h'">1.5h</span>
                                 </span>
                             </div>
+
+                            <!-- Story #53: Badge Hạn chót (Due Date Badge) -->
+                            <div class="d-flex align-items-center gap-2 mt-1.5" th:if="${card.dueDate != null}">
+                                <span th:with="now=${T(java.time.LocalDateTime).now()}, isOverdue=${card.dueDate.isBefore(now)}, isDueSoon=${!isOverdue and card.dueDate.isBefore(now.plusHours(24))}"
+                                      class="badge rounded-pill px-2 py-1 border d-inline-flex align-items-center gap-1"
+                                      th:classappend="${isOverdue} ? 'bg-danger-subtle text-danger-emphasis border-danger-subtle' : (${isDueSoon} ? 'bg-warning-subtle text-warning-emphasis border-warning-subtle' : 'bg-secondary-subtle text-secondary-emphasis border-secondary-subtle')"
+                                      style="font-size: 0.65rem;"
+                                      th:title="${isOverdue} ? 'Đã quá hạn chót' : (${isDueSoon} ? 'Sắp đến hạn chót (trong 24h)' : 'Hạn chót')">
+                                    <i class="bi" th:classappend="${isOverdue} ? 'bi-exclamation-circle-fill' : 'bi-clock'"></i>
+                                    <span th:text="${#temporals.format(card.dueDate, 'dd/MM HH:mm')}">28/08 14:30</span>
+                                </span>
+                            </div>
+
                         </div>
                     </div>
 
@@ -746,6 +759,41 @@
                                 </form>
                                 <p th:unless="${canEditBoard}" class="mb-0 text-secondary"
                                    th:text="${card.description != null and !#strings.isEmpty(card.description)} ? ${card.description} : 'Chưa có mô tả'">Mô tả</p>
+                            </div>
+
+                            <!-- b2. Hạn chót & Nhắc việc (Story #53) -->
+                            <div class="mb-4">
+                                <h6 class="fw-bold text-secondary"><i class="bi bi-calendar-event me-2 text-primary"></i>Hạn chót &amp; Nhắc việc</h6>
+                                <form th:if="${canEditBoard}" th:action="@{/card/{id}/due-date/update(id=${card.id})}" method="post" class="row g-2 align-items-end">
+                                    <div class="col-md-5">
+                                        <label class="form-label small text-muted mb-1">Thời điểm hạn chót</label>
+                                        <input type="datetime-local" name="dueDate" class="form-control form-control-sm"
+                                               th:value="${card.dueDate != null ? (#temporals.format(card.dueDate, 'yyyy-MM-dd') + 'T' + #temporals.format(card.dueDate, 'HH:mm')) : ''}">
+                                    </div>
+                                    <div class="col-md-5">
+                                        <label class="form-label small text-muted mb-1">Nhắc việc trước</label>
+                                        <select name="reminderMinutes" class="form-select form-select-sm">
+                                            <option value="" th:selected="${card.reminderMinutes == null}">Đúng thời điểm hạn chót</option>
+                                            <option value="5" th:selected="${card.reminderMinutes == 5}">5 phút trước</option>
+                                            <option value="15" th:selected="${card.reminderMinutes == 15}">15 phút trước</option>
+                                            <option value="30" th:selected="${card.reminderMinutes == 30}">30 phút trước</option>
+                                            <option value="60" th:selected="${card.reminderMinutes == 60}">1 giờ trước</option>
+                                            <option value="120" th:selected="${card.reminderMinutes == 120}">2 giờ trước</option>
+                                            <option value="1440" th:selected="${card.reminderMinutes == 1440}">1 ngày trước</option>
+                                            <option value="2880" th:selected="${card.reminderMinutes == 2880}">2 ngày trước</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <button type="submit" class="btn btn-primary btn-sm w-100">Lưu</button>
+                                    </div>
+                                </form>
+                                <div th:unless="${canEditBoard}" class="text-secondary small">
+                                    <span th:if="${card.dueDate != null}">
+                                        <i class="bi bi-clock me-1 text-primary"></i>Hạn chót: <strong th:text="${#temporals.format(card.dueDate, 'dd/MM/yyyy HH:mm')}"></strong>
+                                        <span class="ms-2 text-muted" th:text="${card.reminderMinutes != null ? '(Nhắc trước ' + card.reminderMinutes + ' phút)' : '(Nhắc đúng hạn chót)'}"></span>
+                                    </span>
+                                    <span th:unless="${card.dueDate != null}" class="fst-italic text-muted">Chưa thiết lập hạn chót</span>
+                                </div>
                             </div>
 
                             <!-- c. Thành viên -->

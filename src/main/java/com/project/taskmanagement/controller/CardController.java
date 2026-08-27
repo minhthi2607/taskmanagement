@@ -3,6 +3,7 @@ package com.project.taskmanagement.controller;
 import com.project.taskmanagement.config.UserPrincipal;
 import com.project.taskmanagement.dto.CardCreateDto;
 import com.project.taskmanagement.dto.CardUpdateDto;
+import com.project.taskmanagement.dto.CardDueDateDto;
 import com.project.taskmanagement.entity.Card;
 import com.project.taskmanagement.entity.User;
 import com.project.taskmanagement.service.CardService;
@@ -140,6 +141,42 @@ public class CardController {
             boardId = taskListService.getTaskListById(card.getTaskListId()).getBoardId();
             cardService.updateCardDetail(cardId, dto, principal.getUser());
             redirectAttributes.addFlashAttribute("successMessage", "Cập nhật mô tả thẻ thành công!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+
+        return (boardId != null) ? "redirect:/board/" + boardId : "redirect:/";
+    }
+
+    /**
+     * Story #53: Cập nhật Hạn chót & Nhắc việc cho Card
+     */
+    @PostMapping("/card/{cardId}/due-date/update")
+    public String updateCardDueDate(
+            @PathVariable("cardId") Long cardId,
+            @Valid @ModelAttribute("cardDueDateDto") CardDueDateDto dto,
+            BindingResult bindingResult,
+            @AuthenticationPrincipal UserPrincipal principal,
+            RedirectAttributes redirectAttributes
+    ) {
+        if (principal == null || principal.getUser() == null) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Bạn cần đăng nhập để thực hiện thao tác này!");
+            return "redirect:/auth/login";
+        }
+
+        Long boardId = null;
+        try {
+            Card card = cardService.getCardById(cardId);
+            boardId = taskListService.getTaskListById(card.getTaskListId()).getBoardId();
+
+            if (bindingResult.hasErrors()) {
+                String errorMsg = bindingResult.getAllErrors().get(0).getDefaultMessage();
+                redirectAttributes.addFlashAttribute("errorMessage", errorMsg);
+                return "redirect:/board/" + boardId;
+            }
+
+            cardService.updateCardDueDate(cardId, dto.getDueDate(), dto.getReminderMinutes(), principal.getUser());
+            redirectAttributes.addFlashAttribute("successMessage", "Cập nhật hạn chót và nhắc việc thành công!");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         }
