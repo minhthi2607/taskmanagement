@@ -3,8 +3,11 @@ package com.project.taskmanagement.controller;
 import com.project.taskmanagement.config.UserPrincipal;
 import com.project.taskmanagement.dto.CardCreateDto;
 import com.project.taskmanagement.dto.CardUpdateDto;
+import com.project.taskmanagement.dto.CardDueDateDto;
 import com.project.taskmanagement.entity.Card;
+import com.project.taskmanagement.entity.User;
 import com.project.taskmanagement.service.CardService;
+import com.project.taskmanagement.service.CardWatcherService;
 import com.project.taskmanagement.service.TaskListService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +16,9 @@ import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.http.ResponseEntity;
+import java.util.Map;
+import java.util.HashMap;
 
 @Controller
 @RequiredArgsConstructor
@@ -20,6 +26,7 @@ public class CardController {
 
     private final CardService cardService;
     private final TaskListService taskListService;
+    private final CardWatcherService cardWatcherService;
 
     /**
      * Story #32: Tạo mới Card trong TaskList
@@ -142,6 +149,42 @@ public class CardController {
     }
 
     /**
+     * Story #53: Cập nhật Hạn chót & Nhắc việc cho Card
+     */
+    @PostMapping("/card/{cardId}/due-date/update")
+    public String updateCardDueDate(
+            @PathVariable("cardId") Long cardId,
+            @Valid @ModelAttribute("cardDueDateDto") CardDueDateDto dto,
+            BindingResult bindingResult,
+            @AuthenticationPrincipal UserPrincipal principal,
+            RedirectAttributes redirectAttributes
+    ) {
+        if (principal == null || principal.getUser() == null) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Bạn cần đăng nhập để thực hiện thao tác này!");
+            return "redirect:/auth/login";
+        }
+
+        Long boardId = null;
+        try {
+            Card card = cardService.getCardById(cardId);
+            boardId = taskListService.getTaskListById(card.getTaskListId()).getBoardId();
+
+            if (bindingResult.hasErrors()) {
+                String errorMsg = bindingResult.getAllErrors().get(0).getDefaultMessage();
+                redirectAttributes.addFlashAttribute("errorMessage", errorMsg);
+                return "redirect:/board/" + boardId;
+            }
+
+            cardService.updateCardDueDate(cardId, dto.getDueDate(), dto.getReminderMinutes(), principal.getUser());
+            redirectAttributes.addFlashAttribute("successMessage", "Cập nhật hạn chót và nhắc việc thành công!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+
+        return (boardId != null) ? "redirect:/board/" + boardId : "redirect:/";
+    }
+
+    /**
      * Gán thành viên vào thẻ
      */
     @PostMapping("/card/{cardId}/members/add")
@@ -198,7 +241,7 @@ public class CardController {
     }
 
     /**
-     * Thêm bình luận vào thẻ
+     * Story #49: Thêm bình luận vào thẻ
      */
     @PostMapping("/card/{cardId}/comments/add")
     public String addCardComment(
@@ -223,5 +266,194 @@ public class CardController {
         }
 
         return (boardId != null) ? "redirect:/board/" + boardId : "redirect:/";
+    }
+
+    /**
+     * Story #50: Sửa bình luận của chính mình
+     */
+    @PostMapping("/card/comments/{commentId}/update")
+    public String updateCardComment(
+            @PathVariable("commentId") Long commentId,
+            @RequestParam("content") String content,
+            @AuthenticationPrincipal UserPrincipal principal,
+            RedirectAttributes redirectAttributes
+    ) {
+        if (principal == null || principal.getUser() == null) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Bạn cần đăng nhập để thực hiện thao tác này!");
+            return "redirect:/auth/login";
+        }
+
+        Long boardId = null;
+        try {
+            var updatedComment = cardService.updateCardComment(commentId, content, principal.getUser());
+            Card card = cardService.getCardById(updatedComment.getCardId());
+            boardId = taskListService.getTaskListById(card.getTaskListId()).getBoardId();
+            redirectAttributes.addFlashAttribute("successMessage", "Cập nhật bình luận thành công!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+
+        return (boardId != null) ? "redirect:/board/" + boardId : "redirect:/";
+    }
+
+    /**
+     * Story #51: Xóa bình luận
+     */
+    @PostMapping("/card/comments/{commentId}/delete")
+    public String deleteCardComment(
+            @PathVariable("commentId") Long commentId,
+            @RequestParam("cardId") Long cardId,
+            @AuthenticationPrincipal UserPrincipal principal,
+            RedirectAttributes redirectAttributes
+    ) {
+        if (principal == null || principal.getUser() == null) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Bạn cần đăng nhập để thực hiện thao tác này!");
+            return "redirect:/auth/login";
+        }
+
+        Long boardId = null;
+        try {
+            Card card = cardService.getCardById(cardId);
+            boardId = taskListService.getTaskListById(card.getTaskListId()).getBoardId();
+            cardService.deleteCardComment(commentId, principal.getUser());
+            redirectAttributes.addFlashAttribute("successMessage", "Đã xóa bình luận!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+
+        return (boardId != null) ? "redirect:/board/" + boardId : "redirect:/";
+    }
+
+    /**
+     * Story #36: Đính kèm tệp vào thẻ
+     */
+    @PostMapping("/card/{cardId}/attachments/add")
+    public String addAttachment(
+            @PathVariable("cardId") Long cardId,
+            @RequestParam("file") org.springframework.web.multipart.MultipartFile file,
+            @AuthenticationPrincipal UserPrincipal principal,
+            RedirectAttributes redirectAttributes
+    ) {
+        if (principal == null || principal.getUser() == null) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Bạn cần đăng nhập để thực hiện thao tác này!");
+            return "redirect:/auth/login";
+        }
+
+        Long boardId = null;
+        try {
+            Card card = cardService.getCardById(cardId);
+            boardId = taskListService.getTaskListById(card.getTaskListId()).getBoardId();
+            cardService.addAttachment(cardId, file, principal.getUser());
+            redirectAttributes.addFlashAttribute("successMessage", "Tải lên tệp đính kèm thành công!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+
+        return (boardId != null) ? "redirect:/board/" + boardId : "redirect:/";
+    }
+
+    /**
+     * Story #36: Xóa tệp đính kèm
+     */
+    @PostMapping("/card/attachments/{attachmentId}/delete")
+    public String deleteAttachment(
+            @PathVariable("attachmentId") Long attachmentId,
+            @RequestParam("cardId") Long cardId,
+            @AuthenticationPrincipal UserPrincipal principal,
+            RedirectAttributes redirectAttributes
+    ) {
+        if (principal == null || principal.getUser() == null) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Bạn cần đăng nhập để thực hiện thao tác này!");
+            return "redirect:/auth/login";
+        }
+
+        Long boardId = null;
+        try {
+            Card card = cardService.getCardById(cardId);
+            boardId = taskListService.getTaskListById(card.getTaskListId()).getBoardId();
+            cardService.deleteAttachment(attachmentId, principal.getUser());
+            redirectAttributes.addFlashAttribute("successMessage", "Đã xóa tệp đính kèm!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+
+        return (boardId != null) ? "redirect:/board/" + boardId : "redirect:/";
+    }
+
+    /**
+     * Story #41: Gán nhãn cho thẻ
+     */
+    @PostMapping("/card/{cardId}/labels/add")
+    public String addCardLabel(
+            @PathVariable("cardId") Long cardId,
+            @RequestParam("labelId") Long labelId,
+            @AuthenticationPrincipal UserPrincipal principal,
+            RedirectAttributes redirectAttributes
+    ) {
+        if (principal == null || principal.getUser() == null) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Bạn cần đăng nhập để thực hiện thao tác này!");
+            return "redirect:/auth/login";
+        }
+
+        Long boardId = null;
+        try {
+            Card card = cardService.getCardById(cardId);
+            boardId = taskListService.getTaskListById(card.getTaskListId()).getBoardId();
+            cardService.addCardLabel(cardId, labelId, principal.getUser());
+            redirectAttributes.addFlashAttribute("successMessage", "Gán nhãn cho thẻ thành công!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+
+        return (boardId != null) ? "redirect:/board/" + boardId : "redirect:/";
+    }
+
+    /**
+     * Story #41: Gỡ nhãn khỏi thẻ
+     */
+    @PostMapping("/card/{cardId}/labels/{labelId}/remove")
+    public String removeCardLabel(
+            @PathVariable("cardId") Long cardId,
+            @PathVariable("labelId") Long labelId,
+            @AuthenticationPrincipal UserPrincipal principal,
+            RedirectAttributes redirectAttributes
+    ) {
+        if (principal == null || principal.getUser() == null) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Bạn cần đăng nhập để thực hiện thao tác này!");
+            return "redirect:/auth/login";
+        }
+
+        Long boardId = null;
+        try {
+            Card card = cardService.getCardById(cardId);
+            boardId = taskListService.getTaskListById(card.getTaskListId()).getBoardId();
+            cardService.removeCardLabel(cardId, labelId, principal.getUser());
+            redirectAttributes.addFlashAttribute("successMessage", "Đã gỡ nhãn khỏi thẻ!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+
+        return (boardId != null) ? "redirect:/board/" + boardId : "redirect:/";
+    }
+
+    /**
+     * Story #54: Bật/Tắt theo dõi thẻ (Watch Card)
+     */
+    @PostMapping("/card/{cardId}/watch/toggle")
+    @ResponseBody
+    public ResponseEntity<?> toggleWatchCard(
+            @PathVariable("cardId") Long cardId,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        if (principal == null || principal.getUser() == null) {
+            return ResponseEntity.status(401).body(Map.of("error", "Bạn cần đăng nhập"));
+        }
+
+        try {
+            boolean isWatching = cardWatcherService.toggleWatchCard(cardId, principal.getUser());
+            return ResponseEntity.ok(Map.of("success", true, "isWatching", isWatching));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 }

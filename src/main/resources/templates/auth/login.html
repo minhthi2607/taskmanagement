@@ -33,7 +33,7 @@
             </div>
             <div th:if="${param.invalidChar}" class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
                 <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                <span>Thông tin đăng nhập chứa ký tự đặc biệt không hợp lệ (*, %, ',... )!</span>
+                <span>Định dạng email đăng nhập không hợp lệ!</span>
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
             <!-- Card Container -->
@@ -66,7 +66,7 @@
                             <label for="password" class="form-label fw-bold text-muted small text-uppercase">Mật khẩu <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light text-secondary border-end-0"><i class="bi bi-lock"></i></span>
-                                <input type="password" id="password" name="password" class="form-control border-start-0 ps-0 border-end-0" placeholder="Nhập mật khẩu" oninput="this.value = this.value.replace(/[*%']/g, '')" required>
+                                <input type="password" id="password" name="password" class="form-control border-start-0 ps-0 border-end-0" placeholder="Nhập mật khẩu" required>
                                 <button class="btn btn-outline-secondary border-start-0 text-muted" type="button" onclick="togglePasswordVisibility('password', 'toggleIcon')">
                                     <i class="bi bi-eye" id="toggleIcon"></i>
                                 </button>

@@ -5,6 +5,7 @@ import com.project.taskmanagement.entity.Team;
 import com.project.taskmanagement.entity.TeamMember;
 import com.project.taskmanagement.entity.User;
 import com.project.taskmanagement.enums.InvitationStatus;
+import com.project.taskmanagement.enums.NotificationType;
 import com.project.taskmanagement.enums.Role;
 import com.project.taskmanagement.exception.ResourceNotFoundException;
 import com.project.taskmanagement.repository.InvitationRepository;
@@ -12,12 +13,15 @@ import com.project.taskmanagement.repository.TeamMemberRepository;
 import com.project.taskmanagement.repository.TeamRepository;
 import com.project.taskmanagement.repository.UserRepository;
 import com.project.taskmanagement.service.EmailService;
+import com.project.taskmanagement.service.NotificationService;
 import com.project.taskmanagement.service.TeamMemberService;
+import com.project.taskmanagement.service.BoardMemberSyncService;
 import com.project.taskmanagement.service.TeamService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -35,6 +39,8 @@ public class TeamMemberServiceImpl implements TeamMemberService {
     private final InvitationRepository invitationRepository;
     private final TeamService teamService;
     private final EmailService emailService;
+    private final BoardMemberSyncService boardMemberSyncService;
+    private final NotificationService notificationService;
 
     @Override
     @Transactional
@@ -115,6 +121,11 @@ public class TeamMemberServiceImpl implements TeamMemberService {
             throw new IllegalArgumentException("Lời mời này đã được chấp nhận hoặc không còn hiệu lực!");
         }
 
+        if (invitation.getEmail() != null && !invitation.getEmail().equalsIgnoreCase(currentUser.getEmail())) {
+            throw new AccessDeniedException("Lời mời này được gửi đến địa chỉ " + invitation.getEmail() 
+                    + ". Vui lòng đăng nhập đúng tài khoản để chấp nhận lời mời!");
+        }
+
         // Kiểm tra xem đã là thành viên nhóm chưa
         if (!teamMemberRepository.existsByTeamIdAndUserId(invitation.getTeamId(), currentUser.getId())) {
             TeamMember newMember = TeamMember.builder()
@@ -124,10 +135,30 @@ public class TeamMemberServiceImpl implements TeamMemberService {
                     .joinedAt(LocalDateTime.now())
                     .build();
             teamMemberRepository.save(newMember);
+            notifyTeamMemberAdded(invitation.getTeamId(), currentUser.getId());
         }
 
         invitation.setStatus(InvitationStatus.ACCEPTED);
         invitationRepository.save(invitation);
+        if (invitation.getTeamId() != null) {
+            boardMemberSyncService.addMemberToAllGroupBoardsOfTeam(invitation.getTeamId(), currentUser.getId());
+        }
+    }
+
+    /**
+     * Story #48: Thông báo cho người vừa được mời khi họ chấp nhận lời mời tham gia nhóm.
+     * Không được để lỗi gửi thông báo làm hỏng thao tác chấp nhận lời mời chính.
+     */
+    private void notifyTeamMemberAdded(Long teamId, Long newMemberUserId) {
+        try {
+            Team team = teamRepository.findById(teamId).orElse(null);
+            String teamName = team != null ? team.getName() : "";
+            String content = "Bạn đã được thêm vào nhóm '" + teamName + "'";
+            String link = "/team/" + teamId;
+            notificationService.createNotification(newMemberUserId, NotificationType.TEAM_MEMBER_ADDED, content, link);
+        } catch (Exception e) {
+            log.error("Gửi thông báo TEAM_MEMBER_ADDED thất bại cho teamId={}, userId={}: {}", teamId, newMemberUserId, e.getMessage(), e);
+        }
     }
 
     @Override
@@ -154,6 +185,7 @@ public class TeamMemberServiceImpl implements TeamMemberService {
                 .orElseThrow(() -> new ResourceNotFoundException("Thành viên không thuộc nhóm này!"));
 
         teamMemberRepository.delete(member);
+        boardMemberSyncService.removeMemberFromAllGroupBoardsOfTeam(teamId, targetUserId);
     }
 
     @Override

@@ -3,11 +3,13 @@ package com.project.taskmanagement.service.impl;
 import com.project.taskmanagement.entity.*;
 import com.project.taskmanagement.enums.BoardVisibility;
 import com.project.taskmanagement.enums.InvitationStatus;
+import com.project.taskmanagement.enums.NotificationType;
 import com.project.taskmanagement.enums.Role;
 import com.project.taskmanagement.exception.ResourceNotFoundException;
 import com.project.taskmanagement.repository.*;
 import com.project.taskmanagement.service.BoardMemberService;
 import com.project.taskmanagement.service.EmailService;
+import com.project.taskmanagement.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
@@ -30,6 +32,7 @@ public class BoardMemberServiceImpl implements BoardMemberService {
     private final InvitationRepository invitationRepository;
     private final TeamMemberRepository teamMemberRepository;
     private final EmailService emailService;
+    private final NotificationService notificationService;
 
     private boolean isUserAdminOfBoard(Long boardId, Long userId) {
         return boardMemberRepository.findByBoardIdAndUserId(boardId, userId)
@@ -110,6 +113,11 @@ public class BoardMemberServiceImpl implements BoardMemberService {
             throw new IllegalArgumentException("Lời mời này đã được chấp nhận hoặc không còn hiệu lực!");
         }
 
+        if (invitation.getEmail() != null && !invitation.getEmail().equalsIgnoreCase(currentUser.getEmail())) {
+            throw new AccessDeniedException("Lời mời này được gửi đến địa chỉ " + invitation.getEmail() 
+                    + ". Vui lòng đăng nhập đúng tài khoản để chấp nhận lời mời!");
+        }
+
         if (invitation.getBoardId() == null) {
             throw new IllegalArgumentException("Lời mời này không phải là lời mời tham gia bảng!");
         }
@@ -122,10 +130,28 @@ public class BoardMemberServiceImpl implements BoardMemberService {
                     .joinedAt(LocalDateTime.now())
                     .build();
             boardMemberRepository.save(newMember);
+            notifyBoardMemberAdded(invitation.getBoardId(), currentUser.getId());
         }
 
         invitation.setStatus(InvitationStatus.ACCEPTED);
         invitationRepository.save(invitation);
+    }
+
+    /**
+     * Story #47: Thông báo cho người vừa được mời khi họ chấp nhận lời mời tham gia bảng.
+     * Không bắn khi tự join (joinBoard) vì không có ai "chủ động thêm" họ.
+     * Không được để lỗi gửi thông báo làm hỏng thao tác chấp nhận lời mời chính.
+     */
+    private void notifyBoardMemberAdded(Long boardId, Long newMemberUserId) {
+        try {
+            Board board = boardRepository.findById(boardId).orElse(null);
+            String boardName = board != null ? board.getName() : "";
+            String content = "Bạn đã được thêm vào bảng '" + boardName + "'";
+            String link = "/board/" + boardId;
+            notificationService.createNotification(newMemberUserId, NotificationType.BOARD_MEMBER_ADDED, content, link);
+        } catch (Exception e) {
+            log.error("Gửi thông báo BOARD_MEMBER_ADDED thất bại cho boardId={}, userId={}: {}", boardId, newMemberUserId, e.getMessage(), e);
+        }
     }
 
     @Override

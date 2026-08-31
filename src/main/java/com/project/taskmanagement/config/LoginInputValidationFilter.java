@@ -13,8 +13,8 @@ import java.util.regex.Pattern;
 @Component
 public class LoginInputValidationFilter extends OncePerRequestFilter {
 
-    // Regex kiểm tra ký tự đặc biệt nguy hiểm: *, %, ', ", ;, --
-    private static final Pattern INVALID_CHARACTERS_PATTERN = Pattern.compile("[*%'\";]|--");
+    // Regex kiểm tra định dạng email cơ bản
+    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$");
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -23,13 +23,11 @@ public class LoginInputValidationFilter extends OncePerRequestFilter {
         // Chỉ kiểm tra khi có request POST gửi tới đường dẫn /auth/login
         if ("POST".equalsIgnoreCase(request.getMethod()) && "/auth/login".equals(request.getRequestURI())) {
             String email = request.getParameter("email");
-            String password = request.getParameter("password");
 
-            boolean isEmailInvalid = email != null && INVALID_CHARACTERS_PATTERN.matcher(email).find();
-            boolean isPasswordInvalid = password != null && INVALID_CHARACTERS_PATTERN.matcher(password).find();
+            boolean isEmailInvalid = email != null && !email.isBlank() && !EMAIL_PATTERN.matcher(email).matches();
 
-            if (isEmailInvalid || isPasswordInvalid) {
-                // Nếu chứa ký tự đặc biệt nguy hiểm, chặn lại và điều hướng về trang login kèm thông báo lỗi
+            if (isEmailInvalid) {
+                // Nếu email không hợp lệ, chặn lại và điều hướng về trang login kèm thông báo lỗi
                 response.sendRedirect(request.getContextPath() + "/auth/login?invalidChar=true");
                 return;
             }

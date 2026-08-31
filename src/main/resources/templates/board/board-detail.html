@@ -60,14 +60,33 @@
 
                 <!-- Action Buttons -->
                 <div class="d-flex align-items-center gap-2">
+                    <!-- Story #38, #39, #40: Nút Tìm kiếm & Lọc -->
+                    <button type="button" data-bs-toggle="modal" data-bs-target="#searchFilterModal"
+                            class="btn btn-outline-primary btn-sm rounded-pill px-3 d-flex align-items-center gap-1 shadow-sm position-relative"
+                            id="btnOpenSearchFilter" title="Tìm kiếm theo tiêu đề (#38), nhãn (#39), thành viên (#40)">
+                        <i class="bi bi-search me-1"></i>
+                        <span>Tìm kiếm & Lọc</span>
+                        <span th:if="${isFilterActive}" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.65rem;">
+                            Đang lọc
+                        </span>
+                    </button>
                     
                     <!-- Nút tham gia bảng (Cho người chưa là thành viên, Story #25) -->
-                    <form th:if="${!isBoardMember}" th:action="@{/board/{id}/join(id=${board.id})}" method="post" class="m-0">
+                    <form th:if="${!isBoardMember and board.visibility.name() == 'PUBLIC'}" th:action="@{/board/{id}/join(id=${board.id})}" method="post" class="m-0">
                         <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 d-flex align-items-center gap-1 shadow-sm">
                             <i class="bi bi-person-plus-fill me-1"></i>
                             <span>Tham gia bảng</span>
                         </button>
                     </form>
+
+                    <th:block th:if="${canEditBoard}">
+                        <!-- Story #42, #43: Quản lý nhãn -->
+                        <button type="button" data-bs-toggle="modal" data-bs-target="#manageLabelsModal"
+                                class="btn btn-outline-info btn-sm rounded-pill px-3 d-flex align-items-center gap-1 shadow-sm">
+                            <i class="bi bi-tags-fill me-1"></i>
+                            <span>Quản lý nhãn</span>
+                        </button>
+                    </th:block>
 
                     <!-- Dành riêng cho ADMIN bảng -->
                     <th:block th:if="${isBoardAdmin}">
@@ -130,18 +149,18 @@
                                 </div>
                                 <div>
                                     <span class="fw-semibold text-dark d-block" th:text="${member.user.displayName}">Tên người dùng</span>
-                                    <span th:if="${member.user.id == currentUser.id}" class="badge bg-primary-subtle text-primary mt-1" style="font-size: 0.7rem;">Bạn</span>
+                                    <span th:if="${currentUser != null and member.user.id == currentUser.id}" class="badge bg-primary-subtle text-primary mt-1" style="font-size: 0.7rem;">Bạn</span>
                                 </div>
                             </div>
                         </td>
                         <td class="text-secondary" th:text="${member.user.email}">email@example.com</td>
                         <td>
-                            <span th:if="${!isBoardAdmin or member.user.id == currentUser.id}" 
+                            <span th:if="${currentUser == null or !isBoardAdmin or member.user.id == currentUser.id}"
                                   class="badge px-2 py-1" 
                                   th:classappend="${member.role.name() == 'ADMIN'} ? 'bg-danger-subtle text-danger' : 'bg-info-subtle text-info'" 
                                   th:text="${member.role.name() == 'ADMIN'} ? 'Quản trị viên' : 'Thành viên'">Vai trò</span>
                                   
-                            <form th:if="${isBoardAdmin and member.user.id != currentUser.id}" 
+                            <form th:if="${currentUser != null and isBoardAdmin and member.user.id != currentUser.id}"
                                   th:action="@{/board/{boardId}/members/{userId}/role(boardId=${board.id}, userId=${member.user.id})}" 
                                   method="post" class="m-0">
                                 <select name="role" class="form-select form-select-sm w-auto shadow-none" onchange="this.form.submit()">
@@ -183,14 +202,18 @@
             <span class="badge bg-secondary-subtle text-secondary rounded-pill px-3 py-1.5" th:text="${#lists.size(taskLists)} + ' danh sách'">0 danh sách</span>
         </div>
         <div class="card-body p-3 p-md-4 overflow-x-auto">
-            <div class="d-flex gap-3 align-items-start pb-2" style="min-height: 280px; min-width: max-content;">
+            <div id="task-list-sortable-container" class="d-flex gap-3 align-items-start pb-2" style="min-height: 280px; min-width: max-content;">
                 
                 <!-- TaskList Column Loop -->
-                <div th:each="list : ${taskLists}" class="card border-0 shadow-sm rounded-3" style="width: 290px; flex-shrink: 0; background-color: #f8f9fa;">
-                    <div class="card-header bg-white border-0 pt-3 pb-2 px-3 d-flex justify-content-between align-items-center rounded-top-3">
+                <div th:each="list : ${taskLists}" 
+                     class="task-list-column card border-0 shadow-sm rounded-3" 
+                     th:data-list-id="${list.id}" 
+                     th:data-list-position="${list.position}"
+                     style="width: 290px; flex-shrink: 0; background-color: #f8f9fa;">
+                    <div class="card-header bg-white border-0 pt-3 pb-2 px-3 d-flex justify-content-between align-items-center rounded-top-3" style="cursor: grab;">
                         <div class="d-flex align-items-center gap-2 overflow-hidden me-2">
                             <h6 class="fw-bold mb-0 text-truncate text-dark" th:text="${list.name}">Tên danh sách</h6>
-                            <span class="badge bg-light text-secondary border rounded-pill px-2 py-0.5" style="font-size: 0.65rem;" th:text="'#' + ${list.position}">#10</span>
+                            <span class="badge bg-light text-secondary border rounded-pill px-2 py-0.5 badge-position-display" style="font-size: 0.65rem;" th:text="'#' + ${list.position}">#10</span>
                         </div>
                         
                         <!-- List Actions Dropdown (Dành cho người có quyền sửa canEditBoard) -->
@@ -222,17 +245,44 @@
                         </div>
                     </div>
                     
-                    <!-- Cards List Container (Story Card #32/#35) -->
-                    <div class="card-body p-2 d-flex flex-column gap-2" style="max-height: 480px; overflow-y: auto;">
+                    <!-- Cards List Container (Story Card #32/#35, kéo-thả #33/#34) -->
+                    <div class="card-body card-list p-2 d-flex flex-column gap-2" th:data-tasklist-id="${list.id}" th:data-tasklist-name="${list.name}" style="max-height: 480px; overflow-y: auto;">
                         <div th:if="${#lists.isEmpty(list.cards)}" class="text-center py-4 text-muted bg-white rounded border border-dashed border-2">
                             <i class="bi bi-card-checklist d-block mb-1 text-secondary opacity-50 fs-4"></i>
                             <span class="small">Chưa có thẻ nào</span>
                         </div>
 
-                        <!-- Loop cards khi có data: bấm vào mở modal chi tiết (#35) -->
+                        <!-- Loop cards khi có data: bấm vào mở modal chi tiết (#35), kéo-thả đổi vị trí/chuyển danh sách (#33/#34) -->
                         <div th:each="card : ${list.cards}" class="card border shadow-xs p-2 rounded-2 bg-white hover-shadow transition-all"
-                             style="cursor: pointer;" data-bs-toggle="modal" th:data-bs-target="'#cardDetailModal-' + ${card.id}">
-                            <span class="fw-semibold text-dark fs-6" th:text="${card.title}">Tiêu đề thẻ</span>
+                             style="cursor: pointer;" data-bs-toggle="modal" th:data-bs-target="'#cardDetailModal-' + ${card.id}"
+                             th:data-card-id="${card.id}" th:data-position="${card.position}">
+                            <div class="d-flex flex-wrap gap-1 mb-1" th:if="${card.labels != null and !#lists.isEmpty(card.labels)}">
+                                <span th:each="cl : ${card.labels}" class="badge rounded-pill"
+                                      th:style="'font-size: 0.6rem; background-color: ' + ${cl.label.color} + '; color: ' + (${cl.label.color == '#ffc107' or cl.label.color == '#0dcaf0'} ? '#000' : '#fff') + ';'"
+                                      th:text="${cl.label.name}">Nhãn</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-start gap-1">
+                                <span class="fw-semibold text-dark fs-6" th:text="${card.title}">Tiêu đề thẻ</span>
+                                <!-- Story #55: Badge tổng số giờ làm việc (Time Log) -->
+                                <span th:if="${cardTotalHoursMap != null and cardTotalHoursMap.get(card.id) != null and cardTotalHoursMap.get(card.id) > 0}"
+                                      class="badge bg-info-subtle text-info border border-info-subtle rounded-pill px-2 py-0.5" style="font-size: 0.65rem;"
+                                      title="Tổng số giờ đã log">
+                                    <i class="bi bi-clock-history me-1"></i><span th:text="${cardTotalHoursMap.get(card.id)} + 'h'">1.5h</span>
+                                </span>
+                            </div>
+
+                            <!-- Story #53: Badge Hạn chót (Due Date Badge) -->
+                            <div class="d-flex align-items-center gap-2 mt-1.5" th:if="${card.dueDate != null}">
+                                <span th:with="now=${T(java.time.LocalDateTime).now()}, isOverdue=${card.dueDate.isBefore(now)}, isDueSoon=${!isOverdue and card.dueDate.isBefore(now.plusHours(24))}"
+                                      class="badge rounded-pill px-2 py-1 border d-inline-flex align-items-center gap-1"
+                                      th:classappend="${isOverdue} ? 'bg-danger-subtle text-danger-emphasis border-danger-subtle' : (${isDueSoon} ? 'bg-warning-subtle text-warning-emphasis border-warning-subtle' : 'bg-secondary-subtle text-secondary-emphasis border-secondary-subtle')"
+                                      style="font-size: 0.65rem;"
+                                      th:title="${isOverdue} ? 'Đã quá hạn chót' : (${isDueSoon} ? 'Sắp đến hạn chót (trong 24h)' : 'Hạn chót')">
+                                    <i class="bi" th:classappend="${isOverdue} ? 'bi-exclamation-circle-fill' : 'bi-clock'"></i>
+                                    <span th:text="${#temporals.format(card.dueDate, 'dd/MM HH:mm')}">28/08 14:30</span>
+                                </span>
+                            </div>
+
                         </div>
                     </div>
 
@@ -282,8 +332,83 @@
     </div>
 
     <!-- ========================================== -->
-    <!-- MODALS (#21, #22, #27, #23, #24)           -->
+    <!-- MODALS (#21, #22, #27, #23, #24, #38-40)   -->
     <!-- ========================================== -->
+
+    <!-- Modal Story #38, #39, #40: Tìm kiếm & Lọc Card trong Board (Task B) -->
+    <div class="modal fade" id="searchFilterModal" tabindex="-1" aria-labelledby="searchFilterModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title fw-bold fs-6" id="searchFilterModalLabel">
+                        <i class="bi bi-search me-2"></i>Tìm kiếm & Lọc thẻ công việc
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form th:action="@{/board/{id}/search(id=${board.id})}" method="get">
+                    <div class="modal-body p-4">
+
+                        <!-- Story #38: Tìm theo tiêu đề thẻ (LIKE) -->
+                        <div class="mb-3">
+                            <label for="searchKeyword" class="form-label fw-semibold">
+                                <i class="bi bi-card-text me-1 text-primary"></i>Tiêu đề thẻ (Từ khóa)
+                            </label>
+                            <input type="text" class="form-control form-control-sm" id="searchKeyword" name="keyword"
+                                   th:value="${searchDto != null ? searchDto.keyword : ''}"
+                                   placeholder="Nhập từ khóa tìm kiếm gần đúng...">
+                        </div>
+
+                        <!-- Story #39: Lọc theo danh sách Nhãn (IN clause) -->
+                        <div class="mb-3" th:if="${boardLabels != null and !#lists.isEmpty(boardLabels)}">
+                            <label class="form-label fw-semibold">
+                                <i class="bi bi-tags-fill me-1 text-success"></i>Lọc theo Nhãn (Chọn nhiều)
+                            </label>
+                            <div class="d-flex flex-wrap gap-2 border rounded p-2 bg-light">
+                                <div th:each="lbl : ${boardLabels}" class="form-check me-2 mb-1">
+                                    <input class="form-check-input" type="checkbox" name="labelIds"
+                                           th:value="${lbl.id}" th:id="'lbl-check-' + ${lbl.id}"
+                                           th:checked="${searchDto != null and searchDto.labelIds != null and searchDto.labelIds.contains(lbl.id)}">
+                                    <label class="form-check-label small d-inline-flex align-items-center" th:for="'lbl-check-' + ${lbl.id}">
+                                        <span class="badge me-1" th:style="'background-color: ' + ${lbl.color} + '; color: ' + (${lbl.color == '#ffc107' or lbl.color == '#0dcaf0'} ? '#000' : '#fff') + ';'" th:text="${lbl.name}">Nhãn</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Story #40: Lọc theo danh sách Thành viên (IN clause) -->
+                        <div class="mb-3" th:if="${boardMembers != null and !#lists.isEmpty(boardMembers)}">
+                            <label class="form-label fw-semibold">
+                                <i class="bi bi-people-fill me-1 text-info"></i>Lọc theo Thành viên (Chọn nhiều)
+                            </label>
+                            <div class="border rounded p-2 bg-light" style="max-height: 180px; overflow-y: auto;">
+                                <div th:each="bm : ${boardMembers}" class="form-check mb-1">
+                                    <input class="form-check-input" type="checkbox" name="memberIds"
+                                           th:value="${bm.user.id}" th:id="'mem-check-' + ${bm.user.id}"
+                                           th:checked="${searchDto != null and searchDto.memberIds != null and searchDto.memberIds.contains(bm.user.id)}">
+                                    <label class="form-check-label small" th:for="'mem-check-' + ${bm.user.id}">
+                                        <span class="fw-semibold" th:text="${bm.user.displayName}">Tên</span>
+                                        <span class="text-muted" th:text="'(' + ${bm.user.email} + ')'">email</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                    <div class="modal-footer bg-light border-0 d-flex justify-content-between">
+                        <a th:href="@{/board/{id}(id=${board.id})}" class="btn btn-outline-secondary btn-sm px-3" th:if="${isFilterActive}">
+                            <i class="bi bi-x-circle me-1"></i>Xóa bộ lọc
+                        </a>
+                        <div class="ms-auto d-flex gap-2">
+                            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Hủy</button>
+                            <button type="submit" class="btn btn-primary btn-sm px-4">
+                                <i class="bi bi-funnel-fill me-1"></i>Áp dụng bộ lọc
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 
     <!-- Modal Story #23: Mời thành viên -->
     <div class="modal fade" id="inviteMemberModal" tabindex="-1" aria-labelledby="inviteMemberModalLabel" aria-hidden="true" th:if="${isBoardAdmin}">
@@ -491,6 +616,82 @@
         </div>
     </th:block>
 
+    <!-- Modal Story #42, #43: Quản lý nhãn -->
+    <div class="modal fade" id="manageLabelsModal" tabindex="-1" aria-labelledby="manageLabelsModalLabel" aria-hidden="true" th:if="${canEditBoard}">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title fw-bold fs-6" id="manageLabelsModalLabel"><i class="bi bi-tags-fill me-2"></i>Quản lý nhãn của bảng</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <!-- Danh sách nhãn hiện có -->
+                    <h6 class="fw-bold text-secondary mb-3">Nhãn hiện có</h6>
+                    <div class="row row-cols-1 row-cols-md-2 g-3 mb-4">
+                        <div class="col" th:each="label : ${boardLabels}">
+                            <div class="card border shadow-sm">
+                                <div class="card-body p-2 d-flex align-items-center justify-content-between">
+                                    <div class="d-flex align-items-center flex-grow-1 gap-2 me-2">
+                                        <div class="rounded-circle shadow-sm flex-shrink-0" th:style="'width: 24px; height: 24px; background-color: ' + ${label.color} + ';'"></div>
+                                        <form th:action="@{/label/{id}/update(id=${label.id})}" method="post" class="d-flex align-items-center flex-grow-1 gap-2 m-0">
+                                            <input type="hidden" name="boardId" th:value="${board.id}">
+                                            <select name="color" class="form-select form-select-sm border-0 bg-light px-2" required style="width: 110px; flex-shrink: 0;">
+                                                <option value="#0d6efd" th:selected="${label.color == '#0d6efd'}" style="background-color: #0d6efd; color: white;">Xanh dương</option>
+                                                <option value="#198754" th:selected="${label.color == '#198754'}" style="background-color: #198754; color: white;">Xanh lá</option>
+                                                <option value="#dc3545" th:selected="${label.color == '#dc3545'}" style="background-color: #dc3545; color: white;">Đỏ</option>
+                                                <option value="#ffc107" th:selected="${label.color == '#ffc107'}" style="background-color: #ffc107; color: black;">Vàng</option>
+                                                <option value="#0dcaf0" th:selected="${label.color == '#0dcaf0'}" style="background-color: #0dcaf0; color: black;">Xanh lơ</option>
+                                                <option value="#6f42c1" th:selected="${label.color == '#6f42c1'}" style="background-color: #6f42c1; color: white;">Tím</option>
+                                                <option value="#fd7e14" th:selected="${label.color == '#fd7e14'}" style="background-color: #fd7e14; color: white;">Cam</option>
+                                            </select>
+                                            <input type="text" name="name" class="form-control form-control-sm border-0 bg-light flex-grow-1 px-2" th:value="${label.name}" required placeholder="Tên nhãn..." style="min-width: 0;">
+                                            <button type="submit" class="btn btn-sm btn-outline-primary" title="Lưu"><i class="bi bi-check-lg"></i></button>
+                                        </form>
+                                    </div>
+                                    <form th:action="@{/label/{id}/delete(id=${label.id})}" method="post" class="m-0" onsubmit="return confirm('Bạn có chắc chắn muốn xóa nhãn này? Nó sẽ bị gỡ khỏi tất cả các thẻ đang sử dụng.');">
+                                        <input type="hidden" name="boardId" th:value="${board.id}">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Xóa nhãn"><i class="bi bi-trash"></i></button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col w-100" th:if="${#lists.isEmpty(boardLabels)}">
+                            <p class="text-muted small mb-0">Chưa có nhãn nào trong bảng này.</p>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <!-- Form tạo nhãn mới -->
+                    <h6 class="fw-bold text-secondary mb-3">Tạo nhãn mới</h6>
+                    <form th:action="@{/board/{id}/labels/create(id=${board.id})}" method="post">
+                        <div class="row g-2 align-items-end">
+                            <div class="col-md-5">
+                                <label class="form-label small fw-semibold">Tên nhãn</label>
+                                <input type="text" name="name" class="form-control form-control-sm" placeholder="VD: Khẩn cấp, Lỗi..." required>
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label small fw-semibold">Màu sắc</label>
+                                <select name="color" class="form-select form-select-sm" required>
+                                    <option value="#0d6efd" style="background-color: #0d6efd; color: white;">Xanh dương (Blue)</option>
+                                    <option value="#198754" style="background-color: #198754; color: white;">Xanh lá (Green)</option>
+                                    <option value="#dc3545" style="background-color: #dc3545; color: white;">Đỏ (Red)</option>
+                                    <option value="#ffc107" style="background-color: #ffc107; color: black;">Vàng (Yellow)</option>
+                                    <option value="#0dcaf0" style="background-color: #0dcaf0; color: black;">Xanh lơ (Cyan)</option>
+                                    <option value="#6f42c1" style="background-color: #6f42c1; color: white;">Tím (Purple)</option>
+                                    <option value="#fd7e14" style="background-color: #fd7e14; color: white;">Cam (Orange)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <button type="submit" class="btn btn-primary btn-sm w-100">Tạo mới</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Modals cho từng Card (Story #35: xem/sửa chi tiết Card) -->
     <th:block th:each="list : ${taskLists}">
         <th:block th:each="card : ${list.cards}">
@@ -502,6 +703,51 @@
                             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body p-4">
+                            
+                            <!-- a. Hành động thẻ (Story #54: Theo dõi thẻ) -->
+                            <div class="d-flex justify-content-end align-items-center mb-3 pb-2 border-bottom">
+                                <button type="button" class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1 toggle-watch-btn" 
+                                        th:data-card-id="${card.id}" 
+                                        th:with="isWatching=${currentUser != null and card.watchers.![userId].contains(currentUser.id)}"
+                                        th:classappend="${isWatching} ? 'btn-primary text-white border-primary active' : ''">
+                                    <i class="bi" th:classappend="${isWatching} ? 'bi-eye-fill' : 'bi-eye'"></i>
+                                    <span class="watch-text" th:text="${isWatching} ? 'Đang theo dõi' : 'Theo dõi'">Theo dõi</span>
+                                </button>
+                            </div>
+
+                            <!-- b2. Nhãn (Story #41) -->
+                            <div class="mb-4">
+                                <h6 class="fw-bold text-secondary"><i class="bi bi-tags me-2"></i>Nhãn</h6>
+                                <div class="d-flex flex-wrap gap-1 mb-2">
+                                    <span th:each="cardLabel : ${card.labels}" 
+                                          class="badge rounded-pill d-inline-flex align-items-center justify-content-between" 
+                                          th:style="'background-color: ' + ${cardLabel.label.color} + '; color: ' + (${cardLabel.label.color == '#ffc107' or cardLabel.label.color == '#0dcaf0'} ? '#000' : '#fff') + '; padding-right: 0.25rem;'">
+                                        <span class="px-1" th:text="${cardLabel.label.name}">Tên nhãn</span>
+                                        <form th:if="${canEditBoard}" th:action="@{/card/{cardId}/labels/{labelId}/remove(cardId=${card.id}, labelId=${cardLabel.label.id})}" method="post" class="m-0 ms-1">
+                                            <button type="submit" class="btn-close btn-close-white" style="font-size: 0.5rem;" aria-label="Gỡ nhãn"></button>
+                                        </form>
+                                    </span>
+                                    <span th:if="${#lists.isEmpty(card.labels)}" class="text-muted small">Chưa có nhãn nào.</span>
+                                </div>
+                                <div th:if="${canEditBoard}" class="dropdown">
+                                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="bi bi-plus-lg me-1"></i>Thêm nhãn
+                                    </button>
+                                    <ul class="dropdown-menu p-2 shadow-sm" style="min-width: 200px;">
+                                        <li th:each="boardLabel : ${boardLabels}" th:if="${!card.labels.![label.id].contains(boardLabel.id)}">
+                                            <form th:action="@{/card/{cardId}/labels/add(cardId=${card.id})}" method="post" class="m-0 mb-1">
+                                                <input type="hidden" name="labelId" th:value="${boardLabel.id}">
+                                                <button type="submit" class="dropdown-item rounded d-flex align-items-center justify-content-between p-1">
+                                                    <span class="badge w-100 text-start py-2" th:style="'background-color: ' + ${boardLabel.color} + '; color: ' + (${boardLabel.color == '#ffc107' or boardLabel.color == '#0dcaf0'} ? '#000' : '#fff') + ';'" th:text="${boardLabel.name}">Nhãn</span>
+                                                </button>
+                                            </form>
+                                        </li>
+                                        <li th:if="${#lists.isEmpty(boardLabels) or card.labels.size() == boardLabels.size()}">
+                                            <span class="dropdown-item-text text-muted small">Không còn nhãn nào để thêm.</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
 
                             <!-- b. Mô tả -->
                             <div class="mb-4">
@@ -513,6 +759,41 @@
                                 </form>
                                 <p th:unless="${canEditBoard}" class="mb-0 text-secondary"
                                    th:text="${card.description != null and !#strings.isEmpty(card.description)} ? ${card.description} : 'Chưa có mô tả'">Mô tả</p>
+                            </div>
+
+                            <!-- b2. Hạn chót & Nhắc việc (Story #53) -->
+                            <div class="mb-4">
+                                <h6 class="fw-bold text-secondary"><i class="bi bi-calendar-event me-2 text-primary"></i>Hạn chót &amp; Nhắc việc</h6>
+                                <form th:if="${canEditBoard}" th:action="@{/card/{id}/due-date/update(id=${card.id})}" method="post" class="row g-2 align-items-end">
+                                    <div class="col-md-5">
+                                        <label class="form-label small text-muted mb-1">Thời điểm hạn chót</label>
+                                        <input type="datetime-local" name="dueDate" class="form-control form-control-sm"
+                                               th:value="${card.dueDate != null ? (#temporals.format(card.dueDate, 'yyyy-MM-dd') + 'T' + #temporals.format(card.dueDate, 'HH:mm')) : ''}">
+                                    </div>
+                                    <div class="col-md-5">
+                                        <label class="form-label small text-muted mb-1">Nhắc việc trước</label>
+                                        <select name="reminderMinutes" class="form-select form-select-sm">
+                                            <option value="" th:selected="${card.reminderMinutes == null}">Đúng thời điểm hạn chót</option>
+                                            <option value="5" th:selected="${card.reminderMinutes == 5}">5 phút trước</option>
+                                            <option value="15" th:selected="${card.reminderMinutes == 15}">15 phút trước</option>
+                                            <option value="30" th:selected="${card.reminderMinutes == 30}">30 phút trước</option>
+                                            <option value="60" th:selected="${card.reminderMinutes == 60}">1 giờ trước</option>
+                                            <option value="120" th:selected="${card.reminderMinutes == 120}">2 giờ trước</option>
+                                            <option value="1440" th:selected="${card.reminderMinutes == 1440}">1 ngày trước</option>
+                                            <option value="2880" th:selected="${card.reminderMinutes == 2880}">2 ngày trước</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <button type="submit" class="btn btn-primary btn-sm w-100">Lưu</button>
+                                    </div>
+                                </form>
+                                <div th:unless="${canEditBoard}" class="text-secondary small">
+                                    <span th:if="${card.dueDate != null}">
+                                        <i class="bi bi-clock me-1 text-primary"></i>Hạn chót: <strong th:text="${#temporals.format(card.dueDate, 'dd/MM/yyyy HH:mm')}"></strong>
+                                        <span class="ms-2 text-muted" th:text="${card.reminderMinutes != null ? '(Nhắc trước ' + card.reminderMinutes + ' phút)' : '(Nhắc đúng hạn chót)'}"></span>
+                                    </span>
+                                    <span th:unless="${card.dueDate != null}" class="fst-italic text-muted">Chưa thiết lập hạn chót</span>
+                                </div>
                             </div>
 
                             <!-- c. Thành viên -->
@@ -531,33 +812,200 @@
                                     </li>
                                     <li class="list-group-item px-0 text-muted small" th:if="${#lists.isEmpty(card.members)}">Chưa có thành viên nào.</li>
                                 </ul>
-                                <form th:if="${canEditBoard}" th:action="@{/card/{id}/members/add(id=${card.id})}" method="post" class="d-flex gap-2">
-                                    <select name="userId" class="form-select form-select-sm">
-                                        <th:block th:each="bm : ${boardMembers}">
-                                            <option th:if="${!card.members.![userId].contains(bm.user.id)}"
-                                                    th:value="${bm.user.id}" th:text="${bm.user.displayName} + ' (' + ${bm.user.email} + ')'">Thành viên</option>
-                                        </th:block>
-                                    </select>
-                                    <button type="submit" class="btn btn-outline-primary btn-sm px-3">Thêm</button>
+                                <div th:if="${canEditBoard}">
+                                    <input type="text" class="form-control form-control-sm mb-2 member-search-input" th:data-card-id="${card.id}" placeholder="Tìm kiếm thành viên để thêm...">
+                                    <ul class="list-group list-group-flush member-search-results" th:id="'memberSearchResults-' + ${card.id}" style="max-height: 150px; overflow-y: auto; display: none;">
+                                        <li class="list-group-item px-2 py-1 member-search-item" th:each="bm : ${boardMembers}" th:if="${!card.members.![userId].contains(bm.user.id)}">
+                                            <div class="d-flex justify-content-between align-items-center w-100">
+                                                <div class="text-truncate">
+                                                    <span class="fw-semibold member-name" th:text="${bm.user.displayName}">Tên</span>
+                                                    <span class="text-secondary small member-email" th:text="${bm.user.email}">email@example.com</span>
+                                                </div>
+                                                <form th:action="@{/card/{id}/members/add(id=${card.id})}" method="post" class="m-0 ms-2">
+                                                    <input type="hidden" name="userId" th:value="${bm.user.id}">
+                                                    <button type="submit" class="btn btn-primary btn-sm py-0 px-2">Thêm</button>
+                                                </form>
+                                            </div>
+                                        </li>
+                                        <li class="list-group-item px-2 py-1 text-muted small no-results-msg" style="display: none;">Không tìm thấy thành viên.</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <!-- d. Tệp đính kèm (#36) -->
+                            <div class="mb-4">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h6 class="fw-bold text-secondary mb-0">
+                                        <i class="bi bi-paperclip me-2 text-primary"></i>Tệp đính kèm
+                                        <span class="badge bg-secondary-subtle text-secondary rounded-pill ms-1" th:text="${#lists.size(card.attachments)}">0</span>
+                                    </h6>
+                                </div>
+
+                                <!-- Danh sách tệp đính kèm -->
+                                <div class="list-group list-group-flush mb-3" th:unless="${#lists.isEmpty(card.attachments)}">
+                                    <div th:each="att : ${card.attachments}" class="list-group-item px-3 py-2 border rounded-3 mb-2 bg-light-subtle d-flex align-items-center justify-content-between gap-3 shadow-xs">
+                                        <div class="d-flex align-items-center gap-3 overflow-hidden">
+                                            <div class="bg-primary-subtle text-primary rounded p-2 d-flex align-items-center justify-content-center" style="width: 38px; height: 38px; flex-shrink: 0;">
+                                                <i class="bi bi-file-earmark-arrow-down fs-5"></i>
+                                            </div>
+                                            <div class="overflow-hidden">
+                                                <a th:href="${att.fileUrl}" target="_blank" download class="fw-semibold text-dark text-decoration-none text-truncate d-block hover-text-primary" th:text="${att.fileName}">Tên file</a>
+                                                <div class="text-muted small" style="font-size: 0.75rem;">
+                                                    <span th:text="${att.uploader != null ? att.uploader.displayName : 'Thành viên'}">Uploader</span>
+                                                    • <span th:text="${#temporals.format(att.uploadedAt, 'dd/MM/yyyy HH:mm')}">Thời gian</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <a th:href="${att.fileUrl}" target="_blank" download class="btn btn-sm btn-outline-primary rounded-pill px-2.5 py-1 text-nowrap" style="font-size: 0.75rem;">
+                                                <i class="bi bi-download me-1"></i>Tải về
+                                            </a>
+                                            <form th:if="${canEditBoard and (att.uploadedBy == currentUser.id or isBoardAdmin)}"
+                                                  th:action="@{/card/attachments/{id}/delete(id=${att.id})}" method="post" class="m-0"
+                                                  onsubmit="return confirm('Bạn có chắc chắn muốn xóa tệp đính kèm này?');">
+                                                <input type="hidden" name="cardId" th:value="${card.id}">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger rounded-circle p-0 d-inline-flex align-items-center justify-content-center" style="width: 28px; height: 28px;" title="Xóa tệp đính kèm">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div th:if="${#lists.isEmpty(card.attachments)}" class="text-muted small py-2 italic opacity-75">
+                                    Chưa có tệp đính kèm nào.
+                                </div>
+
+                                <!-- Form Upload tệp đính kèm mới -->
+                                <form th:if="${canEditBoard}" th:action="@{/card/{id}/attachments/add(id=${card.id})}" method="post" enctype="multipart/form-data" class="d-flex gap-2 align-items-center">
+                                    <input type="file" name="file" class="form-control form-control-sm shadow-none" required>
+                                    <button type="submit" class="btn btn-primary btn-sm px-3 text-nowrap d-flex align-items-center gap-1">
+                                        <i class="bi bi-upload"></i>Tải tệp lên
+                                    </button>
                                 </form>
                             </div>
 
-                            <!-- d. Bình luận -->
+                            <!-- e. Bình luận (#49, #50, #51, #52) -->
                             <div class="mb-4">
-                                <h6 class="fw-bold text-secondary"><i class="bi bi-chat-left-text me-2"></i>Bình luận</h6>
-                                <div class="mb-2" style="max-height: 200px; overflow-y: auto;">
-                                    <div th:each="cmt : ${card.comments}" class="mb-2 pb-2 border-bottom">
-                                        <div class="d-flex justify-content-between">
-                                            <span class="fw-semibold small" th:text="${cmt.user.displayName}">Tên</span>
-                                            <span class="text-muted" style="font-size: 0.75rem;" th:text="${#temporals.format(cmt.createdAt, 'dd/MM/yyyy HH:mm')}">thời gian</span>
-                                        </div>
-                                        <div class="small" th:text="${cmt.content}">Nội dung bình luận</div>
-                                    </div>
-                                    <div th:if="${#lists.isEmpty(card.comments)}" class="text-muted small">Chưa có bình luận nào.</div>
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h6 class="fw-bold text-secondary mb-0">
+                                        <i class="bi bi-chat-left-text me-2 text-primary"></i>Bình luận
+                                        <span class="badge bg-secondary-subtle text-secondary rounded-pill ms-1" th:text="${#lists.size(card.comments)}">0</span>
+                                    </h6>
                                 </div>
+
+                                <!-- Danh sách bình luận -->
+                                <div class="mb-3 d-flex flex-column gap-3" style="max-height: 280px; overflow-y: auto;">
+                                    <div th:each="cmt : ${card.comments}" class="d-flex gap-2 align-items-start">
+                                        <!-- Avatar -->
+                                        <img th:if="${cmt.user != null and cmt.user.avatarUrl != null}" th:src="${cmt.user.avatarUrl}" alt="Avatar" class="rounded-circle object-fit-cover flex-shrink-0" width="32" height="32">
+                                        <div th:unless="${cmt.user != null and cmt.user.avatarUrl != null}" class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 fw-bold" style="width: 32px; height: 32px; font-size: 0.8rem;">
+                                            <span th:text="${cmt.user != null ? #strings.substring(cmt.user.displayName, 0, 1) : 'U'}">U</span>
+                                        </div>
+
+                                        <div class="w-100">
+                                            <div class="bg-light p-2.5 rounded-3 border">
+                                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                                    <span class="fw-semibold text-dark small" th:text="${cmt.user != null ? cmt.user.displayName : 'Người dùng'}">Tên người dùng</span>
+                                                    <span class="text-muted" style="font-size: 0.7rem;" th:text="${#temporals.format(cmt.createdAt, 'dd/MM/yyyy HH:mm')}">Thời gian</span>
+                                                </div>
+
+                                                <!-- Content hiển thị bình thường -->
+                                                <div th:id="'commentText-' + ${cmt.id}" class="small text-secondary text-break" th:text="${cmt.content}">Nội dung bình luận</div>
+
+                                                <!-- Form chỉnh sửa bình luận inline (#50) -->
+                                                <form th:if="${canEditBoard and cmt.userId == currentUser.id}"
+                                                      th:id="'commentEditForm-' + ${cmt.id}"
+                                                      th:action="@{/card/comments/{id}/update(id=${cmt.id})}"
+                                                      method="post" class="d-none mt-2">
+                                                    <textarea name="content" class="form-control form-control-sm mb-2" rows="2" required th:text="${cmt.content}"></textarea>
+                                                    <div class="d-flex gap-2 justify-content-end">
+                                                        <button type="button" class="btn btn-light btn-sm py-0.5 px-2" style="font-size: 0.75rem;" th:onclick="'toggleEditComment(' + ${cmt.id} + ')'">Hủy</button>
+                                                        <button type="submit" class="btn btn-primary btn-sm py-0.5 px-2" style="font-size: 0.75rem;">Lưu</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+
+                                            <!-- Thao tác Sửa / Xóa bình luận (#50, #51) -->
+                                            <div class="d-flex gap-3 ms-2 mt-1" style="font-size: 0.75rem;" th:if="${canEditBoard}">
+                                                <button type="button" th:if="${cmt.userId == currentUser.id}"
+                                                        class="btn btn-link p-0 text-decoration-none text-muted hover-text-primary border-0"
+                                                        th:onclick="'toggleEditComment(' + ${cmt.id} + ')'">
+                                                    <i class="bi bi-pencil me-1"></i>Sửa
+                                                </button>
+
+                                                <form th:if="${cmt.userId == currentUser.id}"
+                                                      th:action="@{/card/comments/{id}/delete(id=${cmt.id})}" method="post" class="d-inline"
+                                                      onsubmit="return confirm('Bạn có chắc chắn muốn xóa bình luận này?');">
+                                                    <input type="hidden" name="cardId" th:value="${card.id}">
+                                                    <button type="submit" class="btn btn-link p-0 text-decoration-none text-danger hover-text-danger border-0">
+                                                        <i class="bi bi-trash me-1"></i>Xóa
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div th:if="${#lists.isEmpty(card.comments)}" class="text-muted small py-2 italic opacity-75">
+                                        Chưa có bình luận nào.
+                                    </div>
+                                </div>
+
+                                <!-- Form Thêm bình luận mới (#49) -->
                                 <form th:if="${canEditBoard}" th:action="@{/card/{id}/comments/add(id=${card.id})}" method="post" class="d-flex gap-2">
-                                    <input type="text" name="content" class="form-control form-control-sm" placeholder="Viết bình luận..." required>
-                                    <button type="submit" class="btn btn-outline-primary btn-sm px-3">Thêm</button>
+                                    <input type="text" name="content" class="form-control form-control-sm shadow-none" placeholder="Viết bình luận..." required>
+                                    <button type="submit" class="btn btn-primary btn-sm px-3 text-nowrap d-flex align-items-center gap-1">
+                                        <i class="bi bi-send-fill"></i>Gửi
+                                    </button>
+                                </form>
+                            </div>
+
+                            <!-- Story #55: Nhật ký thời gian (Time Log) -->
+                            <div class="mb-4">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h6 class="fw-bold text-secondary mb-0">
+                                        <i class="bi bi-clock-history me-2"></i>Nhật ký thời gian (Time Log)
+                                    </h6>
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2.5 py-1 fw-semibold" style="font-size: 0.8rem;">
+                                        Tổng: <span th:text="${cardTotalHoursMap != null and cardTotalHoursMap.get(card.id) != null ? cardTotalHoursMap.get(card.id) : 0} + 'h'">0h</span>
+                                    </span>
+                                </div>
+
+                                <!-- Danh sách log thời gian hiện có của thẻ -->
+                                <div class="mb-2" style="max-height: 180px; overflow-y: auto;" th:if="${card.timeLogs != null and !#lists.isEmpty(card.timeLogs)}">
+                                    <div th:each="tl : ${card.timeLogs}" class="d-flex justify-content-between align-items-center p-2 mb-1 bg-light rounded border-start border-3 border-primary">
+                                        <div>
+                                            <span class="fw-bold text-dark me-2" th:text="${tl.hours} + ' giờ'">1.5 giờ</span>
+                                            <span class="text-secondary small me-2" th:text="${tl.user != null ? tl.user.displayName : 'N/A'}">Người log</span>
+                                            <span class="text-muted" style="font-size: 0.75rem;" th:text="${tl.loggedAt != null ? #temporals.format(tl.loggedAt, 'dd/MM/yyyy HH:mm') : ''}">thời gian</span>
+                                            <div th:if="${tl.note != null and !#strings.isEmpty(tl.note)}" class="small text-muted fst-italic mt-0.5" th:text="${tl.note}">Ghi chú</div>
+                                        </div>
+                                        <form th:if="${canEditBoard or (currentUser != null and tl.userId == currentUser.id)}"
+                                              th:action="@{/card/{cardId}/time-logs/{logId}/delete(cardId=${card.id}, logId=${tl.id})}"
+                                              method="post" class="m-0">
+                                            <button type="submit" class="btn btn-outline-danger btn-sm p-1 lh-1" title="Xóa bản ghi thời gian" onclick="return confirm('Bạn có chắc muốn xóa bản ghi thời gian này?');">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                                <div th:if="${card.timeLogs == null or #lists.isEmpty(card.timeLogs)}" class="text-muted small mb-2 fst-italic">
+                                    Chưa có nhật ký thời gian nào cho thẻ này.
+                                </div>
+
+                                <!-- Form ghi nhận thời gian mới (Story #55) -->
+                                <form th:if="${canEditBoard}" th:action="@{/card/{id}/time-logs/add(id=${card.id})}" method="post" class="bg-light p-2.5 rounded border">
+                                    <div class="row g-2 align-items-center">
+                                        <div class="col-md-3">
+                                            <input type="number" step="0.01" min="0.01" max="999.99" name="hours" class="form-control form-control-sm" placeholder="Số giờ..." required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <input type="text" name="note" class="form-control form-control-sm" placeholder="Ghi chú công việc...">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <button type="submit" class="btn btn-primary btn-sm w-100">
+                                                <i class="bi bi-plus-circle me-1"></i>Ghi giờ
+                                            </button>
+                                        </div>
+                                    </div>
                                 </form>
                             </div>
 
@@ -593,39 +1041,16 @@
 </div>
 
 <th:block layout:fragment="scripts">
-    <script>
-        function showAddCardForm(listId) {
-            document.getElementById('addCardTrigger-' + listId).classList.add('d-none');
-            const form = document.getElementById('addCardForm-' + listId);
-            form.classList.remove('d-none');
-            form.querySelector('input[name="title"]').focus();
-        }
+    <!-- jQuery + jQuery UI (chỉ dùng ở trang này, cho kéo-thả TaskList #30 và Card #33/#34) -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
 
-        function hideAddCardForm(listId) {
-            document.getElementById('addCardTrigger-' + listId).classList.remove('d-none');
-            document.getElementById('addCardForm-' + listId).classList.add('d-none');
-        }
-
-        // Story #35: Khôi phục lại mô tả gốc khi đóng modal chi tiết Card
-        // mà không bấm Lưu, tránh hiển thị sai nội dung mô tả ở lần mở kế tiếp.
-        document.querySelectorAll('[id^="cardDetailModal-"]').forEach(function (modalEl) {
-            let originalDescription = '';
-
-            modalEl.addEventListener('show.bs.modal', function () {
-                const textarea = modalEl.querySelector('textarea[name="description"]');
-                if (textarea) {
-                    originalDescription = textarea.value;
-                }
-            });
-
-            modalEl.addEventListener('hidden.bs.modal', function () {
-                const textarea = modalEl.querySelector('textarea[name="description"]');
-                if (textarea) {
-                    textarea.value = originalDescription;
-                }
-            });
-        });
+    <script th:inline="javascript">
+        window.boardConfig = {
+            canEditBoard: [[${canEditBoard}]]
+        };
     </script>
+    <script th:src="@{/js/board-detail.js}"></script>
 </th:block>
 
 </body>

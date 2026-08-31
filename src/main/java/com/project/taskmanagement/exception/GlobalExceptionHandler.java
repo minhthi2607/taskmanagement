@@ -1,6 +1,7 @@
 package com.project.taskmanagement.exception;
 
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.ui.Model;
@@ -11,7 +12,10 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Slf4j
 @ControllerAdvice
+@RequiredArgsConstructor
 public class GlobalExceptionHandler {
+
+    private final SafeRedirectHelper safeRedirectHelper;
 
     /**
      * Xử lý ngoại lệ không tìm thấy tài nguyên (404)
@@ -30,8 +34,7 @@ public class GlobalExceptionHandler {
     public String handleAccessDeniedException(Exception ex, RedirectAttributes redirectAttributes, HttpServletRequest request) {
         log.warn("AccessDeniedException at {}: {}", request.getRequestURI(), ex.getMessage());
         redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage() != null ? ex.getMessage() : "Bạn không có quyền thực hiện thao tác này!");
-        String referer = request.getHeader("Referer");
-        return (referer != null && !referer.isBlank()) ? "redirect:" + referer : "redirect:/team/list";
+        return safeRedirectHelper.getSafeRedirectUrl(request,"/team/list");
     }
 
     /**
@@ -41,8 +44,7 @@ public class GlobalExceptionHandler {
     public String handleIllegalArgumentException(IllegalArgumentException ex, RedirectAttributes redirectAttributes, HttpServletRequest request) {
         log.warn("IllegalArgumentException at {}: {}", request.getRequestURI(), ex.getMessage());
         redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
-        String referer = request.getHeader("Referer");
-        return (referer != null && !referer.isBlank()) ? "redirect:" + referer : "redirect:/";
+        return safeRedirectHelper.getSafeRedirectUrl(request,"/");
     }
 
     /**
@@ -52,8 +54,7 @@ public class GlobalExceptionHandler {
     public String handleMaxUploadSizeExceeded(MaxUploadSizeExceededException ex, RedirectAttributes redirectAttributes, HttpServletRequest request) {
         log.warn("MaxUploadSizeExceededException at {}: {}", request.getRequestURI(), ex.getMessage());
         redirectAttributes.addFlashAttribute("errorMessage", "Dung lượng file upload vượt quá giới hạn cho phép (tối đa 5MB)!");
-        String referer = request.getHeader("Referer");
-        return (referer != null && !referer.isBlank()) ? "redirect:" + referer : "redirect:/user/profile";
+        return safeRedirectHelper.getSafeRedirectUrl(request,"/user/profile");
     }
 
     /**
@@ -63,8 +64,7 @@ public class GlobalExceptionHandler {
     public String handleDataIntegrityViolationException(org.springframework.dao.DataIntegrityViolationException ex, RedirectAttributes redirectAttributes, HttpServletRequest request) {
         log.warn("DataIntegrityViolationException at {}: {}", request.getRequestURI(), ex.getMessage());
         redirectAttributes.addFlashAttribute("errorMessage", "Dữ liệu không hợp lệ hoặc đã tồn tại trong hệ thống (vi phạm ràng buộc dữ liệu)!");
-        String referer = request.getHeader("Referer");
-        return (referer != null && !referer.isBlank()) ? "redirect:" + referer : "redirect:/";
+        return safeRedirectHelper.getSafeRedirectUrl(request,"/");
     }
 
     /**
@@ -75,8 +75,7 @@ public class GlobalExceptionHandler {
         log.warn("BindException at {}: {}", request.getRequestURI(), ex.getMessage());
         String errorMsg = ex.getBindingResult().getAllErrors().get(0).getDefaultMessage();
         redirectAttributes.addFlashAttribute("errorMessage", errorMsg != null ? errorMsg : "Dữ liệu nhập vào không hợp lệ!");
-        String referer = request.getHeader("Referer");
-        return (referer != null && !referer.isBlank()) ? "redirect:" + referer : "redirect:/";
+        return safeRedirectHelper.getSafeRedirectUrl(request,"/");
     }
 
     /**
@@ -86,8 +85,7 @@ public class GlobalExceptionHandler {
     public String handleIllegalStateException(IllegalStateException ex, RedirectAttributes redirectAttributes, HttpServletRequest request) {
         log.warn("IllegalStateException at {}: {}", request.getRequestURI(), ex.getMessage());
         redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage() != null ? ex.getMessage() : "Thao tác không thể thực hiện ở trạng thái hiện tại!");
-        String referer = request.getHeader("Referer");
-        return (referer != null && !referer.isBlank()) ? "redirect:" + referer : "redirect:/";
+        return safeRedirectHelper.getSafeRedirectUrl(request,"/");
     }
 
     /**
@@ -111,4 +109,5 @@ public class GlobalExceptionHandler {
         model.addAttribute("errorMessage", "Đã xảy ra lỗi hệ thống. Vui lòng thử lại sau!");
         return "error/500";
     }
+
 }

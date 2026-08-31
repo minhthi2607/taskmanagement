@@ -3,14 +3,20 @@ package com.project.taskmanagement.controller;
 import com.project.taskmanagement.config.UserPrincipal;
 import com.project.taskmanagement.dto.BoardCreateDto;
 import com.project.taskmanagement.dto.BoardUpdateDto;
+import com.project.taskmanagement.dto.CardSearchDto;
+import com.project.taskmanagement.dto.TaskListCreateDto;
 import com.project.taskmanagement.entity.Board;
+import com.project.taskmanagement.entity.Card;
+import com.project.taskmanagement.entity.TaskList;
 import com.project.taskmanagement.entity.User;
 import com.project.taskmanagement.enums.BoardVisibility;
-import com.project.taskmanagement.dto.TaskListCreateDto;
-import com.project.taskmanagement.service.TaskListService;
-import com.project.taskmanagement.service.BoardService;
-import com.project.taskmanagement.service.BoardPermissionService;
+import com.project.taskmanagement.service.LabelService;
 import com.project.taskmanagement.service.BoardMemberService;
+import com.project.taskmanagement.service.BoardPermissionService;
+import com.project.taskmanagement.service.BoardService;
+import com.project.taskmanagement.service.CardService;
+import com.project.taskmanagement.service.CardTimeLogService;
+import com.project.taskmanagement.service.TaskListService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -20,6 +26,10 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.math.BigDecimal;
+import java.util.*;
+import java.util.stream.Collectors;
+
 @Controller
 @RequiredArgsConstructor
 public class BoardController {
@@ -28,6 +38,9 @@ public class BoardController {
     private final BoardPermissionService boardPermissionService;
     private final BoardMemberService boardMemberService;
     private final TaskListService taskListService;
+    private final CardService cardService;
+    private final CardTimeLogService cardTimeLogService;
+    private final LabelService labelService;
 
     /**
      * Story #20: Tạo mới Bảng công việc từ DTO (Task B)
@@ -63,9 +76,10 @@ public class BoardController {
     /**
      * Hiển thị chi tiết bảng công việc
      */
-    @GetMapping("/board/{id}")
+    @GetMapping({"/board/{id}","/board/{id}/search"})
     public String showBoardDetail(
             @PathVariable("id") Long boardId,
+            @ModelAttribute("searchDto") CardSearchDto searchDto,
             @AuthenticationPrincipal UserPrincipal principal,
             Model model,
             RedirectAttributes redirectAttributes
@@ -91,15 +105,47 @@ public class BoardController {
                         .boardId(boardId)
                         .build());
             }
+            List<TaskList> taskLists = taskListService.getTaskListsByBoardId(boardId);
+
+            boolean isFilterActive = searchDto != null &&
+                    ((searchDto.getKeyword() != null && !searchDto.getKeyword().trim().isEmpty()) ||
+                            (searchDto.getLabelIds() != null && !searchDto.getLabelIds().isEmpty()) ||
+                            (searchDto.getMemberIds() != null && !searchDto.getMemberIds().isEmpty()));
+
+            if (isFilterActive) {
+                searchDto.setBoardId(boardId);
+                List<Card> matchedCards = cardService.searchCards(searchDto, currentUser);
+                Set<Long> matchedCardIds = matchedCards.stream().map(Card::getId).collect(Collectors.toSet());
+
+                for (TaskList tl : taskLists) {
+                    if (tl.getCards() != null) {
+                        tl.setCards(tl.getCards().stream()
+                                .filter(c -> matchedCardIds.contains(c.getId()))
+                                .collect(Collectors.toList()));
+                    }
+                }
+            }
+
+            // Nạp batch tổng giờ log của các thẻ trên Board bằng 1 SQL Query duy nhất (Tránh N+1 Query)
+            List<Long> visibleCardIds = taskLists.stream()
+                    .flatMap(tl -> (tl.getCards() != null ? tl.getCards() : Collections.<Card>emptyList()).stream())
+                    .map(Card::getId)
+                    .collect(Collectors.toList());
+
+            Map<Long, BigDecimal> cardTotalHoursMap = cardTimeLogService.getTotalHoursMapForCards(visibleCardIds);
 
             model.addAttribute("board", board);
             model.addAttribute("isBoardAdmin", isBoardAdmin);
             model.addAttribute("isBoardMember", isBoardMember);
             model.addAttribute("canEditBoard", canEditBoard);
-            model.addAttribute("taskLists", taskListService.getTaskListsByBoardId(boardId));
+            model.addAttribute("taskLists", taskLists);
             model.addAttribute("allVisibilities", BoardVisibility.values());
+            model.addAttribute("boardLabels", labelService.getLabelsByBoardId(boardId));
             model.addAttribute("boardMembers", boardMemberService.getBoardMembers(boardId));
             model.addAttribute("currentUser", currentUser);
+            model.addAttribute("searchDto", searchDto != null ? searchDto : new CardSearchDto());
+            model.addAttribute("isFilterActive", isFilterActive);
+            model.addAttribute("cardTotalHoursMap", cardTotalHoursMap);
 
             return "board/board-detail";
         } catch (Exception e) {

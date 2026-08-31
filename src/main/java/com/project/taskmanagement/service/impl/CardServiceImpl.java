@@ -1,33 +1,70 @@
 package com.project.taskmanagement.service.impl;
 
+import com.project.taskmanagement.dto.CardSearchDto;
 import com.project.taskmanagement.dto.CardUpdateDto;
+import com.project.taskmanagement.entity.BoardMember;
 import com.project.taskmanagement.entity.Card;
+import com.project.taskmanagement.entity.CardAttachment;
 import com.project.taskmanagement.entity.CardComment;
+import com.project.taskmanagement.entity.CardLabel;
 import com.project.taskmanagement.entity.CardMember;
 import com.project.taskmanagement.entity.TaskList;
 import com.project.taskmanagement.entity.User;
+import com.project.taskmanagement.enums.NotificationType;
+import com.project.taskmanagement.enums.Role;
 import com.project.taskmanagement.exception.ResourceNotFoundException;
 import com.project.taskmanagement.repository.BoardMemberRepository;
+import com.project.taskmanagement.repository.CardAttachmentRepository;
 import com.project.taskmanagement.repository.CardCommentRepository;
 import com.project.taskmanagement.repository.CardMemberRepository;
 import com.project.taskmanagement.repository.CardRepository;
+import com.project.taskmanagement.repository.LabelRepository;
+import com.project.taskmanagement.repository.CardLabelRepository;
 import com.project.taskmanagement.repository.TaskListRepository;
 import com.project.taskmanagement.service.BoardPermissionService;
 import com.project.taskmanagement.service.CardService;
+import com.project.taskmanagement.service.CardWatcherService;
+import com.project.taskmanagement.service.NotificationService;
+import com.project.taskmanagement.specification.CardSpecification;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.*;
+import java.util.Objects;
+import java.util.UUID;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class CardServiceImpl implements CardService {
 
+    private static final Logger logger = LoggerFactory.getLogger(CardServiceImpl.class);
+
     private final CardRepository cardRepository;
     private final CardMemberRepository cardMemberRepository;
     private final CardCommentRepository cardCommentRepository;
+    private final CardAttachmentRepository cardAttachmentRepository;
     private final TaskListRepository taskListRepository;
     private final BoardMemberRepository boardMemberRepository;
     private final BoardPermissionService boardPermissionService;
+    private final NotificationService notificationService;
+    private final CardWatcherService cardWatcherService;
+    private final LabelRepository labelRepository;
+    private final CardLabelRepository cardLabelRepository;
+
+    @Value("${app.upload-dir:uploads/}")
+    private String uploadDirConfig;
 
     private TaskList getTaskListOrThrow(Long taskListId) {
         return taskListRepository.findById(taskListId)
@@ -63,7 +100,51 @@ public class CardServiceImpl implements CardService {
                 .createdBy(currentUser.getId())
                 .build();
 
-        return cardRepository.save(card);
+        Card savedCard = cardRepository.save(card);
+
+        notifyCardAdded(taskList, savedCard, currentUser);
+
+        return savedCard;
+    }
+
+    /**
+     * Story #44: Thông báo cho mọi BoardMember (trừ người tạo) khi thêm thẻ mới.
+     * Không được để lỗi gửi thông báo làm hỏng thao tác tạo thẻ chính.
+     */
+    private void notifyCardAdded(TaskList taskList, Card savedCard, User currentUser) {
+        try {
+            String content = currentUser.getDisplayName() + " đã thêm '" + savedCard.getTitle()
+                    + "' vào '" + taskList.getName() + "'";
+            String link = "/board/" + taskList.getBoardId();
+
+            List<BoardMember> boardMembers = boardMemberRepository.findByBoardId(taskList.getBoardId());
+            for (BoardMember boardMember : boardMembers) {
+                if (Objects.equals(boardMember.getUserId(), currentUser.getId())) {
+                    continue;
+                }
+                notificationService.createNotification(boardMember.getUserId(), NotificationType.CARD_ADDED, content, link);
+            }
+        } catch (Exception e) {
+            logger.error("Gửi thông báo CARD_ADDED thất bại cho cardId={}: {}", savedCard.getId(), e.getMessage(), e);
+        }
+    }
+
+    private void notifyCardWatchers(Card card, String actionDescription, User currentUser) {
+        try {
+            Long boardId = getTaskListOrThrow(card.getTaskListId()).getBoardId();
+            String content = currentUser.getDisplayName() + " " + actionDescription + " '" + card.getTitle() + "'";
+            String link = "/board/" + boardId;
+
+            java.util.List<com.project.taskmanagement.entity.CardWatcher> watchers = cardWatcherService.getWatchers(card.getId());
+            for (com.project.taskmanagement.entity.CardWatcher watcher : watchers) {
+                if (Objects.equals(watcher.getUserId(), currentUser.getId())) {
+                    continue;
+                }
+                notificationService.createNotification(watcher.getUserId(), NotificationType.CARD_WATCH_ACTIVITY, content, link);
+            }
+        } catch (Exception e) {
+            logger.error("Gửi thông báo CARD_WATCH_ACTIVITY thất bại cho cardId={}: {}", card.getId(), e.getMessage(), e);
+        }
     }
 
     /**
@@ -103,10 +184,37 @@ public class CardServiceImpl implements CardService {
             throw new IllegalArgumentException("Không thể di chuyển thẻ sang danh sách công việc thuộc bảng khác!");
         }
 
+        // Lấy tên TaskList cũ TRƯỚC khi đổi taskListId — không lấy lại được sau khi đã đổi
+        String oldTaskListName = currentTaskList.getName();
+
         // Convention 6.14: luôn set FK qua field Long, TUYỆT ĐỐI không gọi card.setTaskList(...)
         card.setTaskListId(targetTaskListId);
         card.setPosition(newPosition);
         cardRepository.save(card);
+
+        notifyCardMoved(currentTaskList.getBoardId(), card, oldTaskListName, targetTaskList.getName(), currentUser);
+        notifyCardWatchers(card, "đã di chuyển thẻ từ '" + oldTaskListName + "' sang '" + targetTaskList.getName() + "'", currentUser);
+    }
+
+    /**
+     * Story #45: Thông báo cho mọi BoardMember (trừ người di chuyển) khi di chuyển thẻ sang TaskList khác.
+     */
+    private void notifyCardMoved(Long boardId, Card card, String oldTaskListName, String newTaskListName, User currentUser) {
+        try {
+            String content = currentUser.getDisplayName() + " đã di chuyển thẻ '" + card.getTitle()
+                    + "' từ '" + oldTaskListName + "' sang '" + newTaskListName + "'";
+            String link = "/board/" + boardId;
+
+            List<BoardMember> boardMembers = boardMemberRepository.findByBoardId(boardId);
+            for (BoardMember boardMember : boardMembers) {
+                if (Objects.equals(boardMember.getUserId(), currentUser.getId())) {
+                    continue;
+                }
+                notificationService.createNotification(boardMember.getUserId(), NotificationType.CARD_MOVED, content, link);
+            }
+        } catch (Exception e) {
+            logger.error("Gửi thông báo CARD_MOVED thất bại cho cardId={}: {}", card.getId(), e.getMessage(), e);
+        }
     }
 
     /**
@@ -120,15 +228,36 @@ public class CardServiceImpl implements CardService {
         boardPermissionService.checkEditPermission(taskList.getBoardId(), currentUser);
 
         card.setDescription(dto != null ? dto.getDescription() : null);
+        Card savedCard = cardRepository.save(card);
+        
+        notifyCardWatchers(savedCard, "đã cập nhật mô tả của thẻ", currentUser);
+        return savedCard;
+    }
+
+    /**
+     * Story #53: Cập nhật Hạn chót & Nhắc việc cho Card
+     */
+    @Override
+    @Transactional
+    public Card updateCardDueDate(Long cardId, java.time.LocalDateTime dueDate, Integer reminderMinutes, User currentUser) {
+        Card card = getCardById(cardId);
+        TaskList taskList = getTaskListOrThrow(card.getTaskListId());
+        boardPermissionService.checkEditPermission(taskList.getBoardId(), currentUser);
+
+        card.setDueDate(dueDate);
+        card.setReminderMinutes(dueDate != null ? reminderMinutes : null);
+        card.setReminderSentAt(null);
+
         return cardRepository.save(card);
     }
+
 
     @Override
     @Transactional
     public void addCardMember(Long cardId, Long userId, User currentUser) {
         Card card = getCardById(cardId);
         TaskList taskList = getTaskListOrThrow(card.getTaskListId());
-        boardPermissionService.checkEditPermission(taskList.getBoardId(), currentUser);
+        boardPermissionService.checkCardMemberOrLabelPermission(taskList.getBoardId(), currentUser);
 
         if (!boardMemberRepository.existsByBoardIdAndUserId(taskList.getBoardId(), userId)) {
             throw new IllegalArgumentException("Người dùng phải là thành viên của bảng mới có thể được gán vào thẻ!");
@@ -143,6 +272,26 @@ public class CardServiceImpl implements CardService {
                 .userId(userId)
                 .build();
         cardMemberRepository.save(cardMember);
+
+        notifyCardMemberAssigned(taskList.getBoardId(), card, userId, currentUser);
+        notifyCardWatchers(card, "đã thêm thành viên vào thẻ", currentUser);
+    }
+
+    /**
+     * Story #46: Thông báo CHỈ cho người vừa được gán vào thẻ (khác #44/#45 vốn báo cho cả BoardMember).
+     */
+    private void notifyCardMemberAssigned(Long boardId, Card card, Long assignedUserId, User currentUser) {
+        try {
+            if (Objects.equals(assignedUserId, currentUser.getId())) {
+                return;
+            }
+            String content = currentUser.getDisplayName() + " đã gán bạn vào thẻ '" + card.getTitle() + "'";
+            String link = "/board/" + boardId;
+
+            notificationService.createNotification(assignedUserId, NotificationType.CARD_MEMBER_ASSIGNED, content, link);
+        } catch (Exception e) {
+            logger.error("Gửi thông báo CARD_MEMBER_ASSIGNED thất bại cho cardId={}: {}", card.getId(), e.getMessage(), e);
+        }
     }
 
     @Override
@@ -150,13 +299,16 @@ public class CardServiceImpl implements CardService {
     public void removeCardMember(Long cardId, Long userId, User currentUser) {
         Card card = getCardById(cardId);
         TaskList taskList = getTaskListOrThrow(card.getTaskListId());
-        boardPermissionService.checkEditPermission(taskList.getBoardId(), currentUser);
+        boardPermissionService.checkCardMemberOrLabelPermission(taskList.getBoardId(), currentUser);
 
         CardMember cardMember = cardMemberRepository.findByCardIdAndUserId(cardId, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Thành viên không thuộc thẻ này!"));
         cardMemberRepository.delete(cardMember);
     }
 
+    /**
+     * Story #49: Thêm bình luận vào thẻ (kèm validate không rỗng và độ dài)
+     */
     @Override
     @Transactional
     public void addCardComment(Long cardId, String content, User currentUser) {
@@ -168,6 +320,9 @@ public class CardServiceImpl implements CardService {
         if (trimmedContent.isBlank()) {
             throw new IllegalArgumentException("Nội dung bình luận không được để trống!");
         }
+        if (trimmedContent.length() > 2000) {
+            throw new IllegalArgumentException("Nội dung bình luận không được vượt quá 2000 ký tự!");
+        }
 
         CardComment comment = CardComment.builder()
                 .cardId(cardId)
@@ -175,6 +330,224 @@ public class CardServiceImpl implements CardService {
                 .content(trimmedContent)
                 .build();
         cardCommentRepository.save(comment);
+        
+        notifyCardWatchers(card, "đã bình luận vào thẻ", currentUser);
+    }
+
+
+    /**
+     * Story #38, #39, #40: Tìm kiếm & Lọc Card trong Board qua DTO và JPA Specification (Task B)
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public List<Card> searchCards(CardSearchDto searchDto, User currentUser) {
+        if (searchDto == null || searchDto.getBoardId() == null) {
+            throw new IllegalArgumentException("Board ID không được để trống khi tìm kiếm!");
+        }
+
+        boardPermissionService.checkViewPermission(searchDto.getBoardId(), currentUser);
+
+        Specification<Card> spec = CardSpecification.filterCards(searchDto);
+        return cardRepository.findAll(spec);
+    }
+
+    /**
+     * Story #50: Chỉnh sửa bình luận của chính mình
+     */
+    @Override
+    @Transactional
+    public CardComment updateCardComment(Long commentId, String content, User currentUser) {
+        CardComment comment = cardCommentRepository.findById(commentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bình luận với ID: " + commentId));
+
+        if (!Objects.equals(comment.getUserId(), currentUser.getId())) {
+            throw new AccessDeniedException("Bạn chỉ có thể chỉnh sửa bình luận của chính mình!");
+        }
+
+        Card card = getCardById(comment.getCardId());
+        TaskList taskList = getTaskListOrThrow(card.getTaskListId());
+        boardPermissionService.checkEditPermission(taskList.getBoardId(), currentUser);
+
+        String trimmedContent = content != null ? content.trim() : "";
+        if (trimmedContent.isBlank()) {
+            throw new IllegalArgumentException("Nội dung bình luận không được để trống!");
+        }
+        if (trimmedContent.length() > 2000) {
+            throw new IllegalArgumentException("Nội dung bình luận không được vượt quá 2000 ký tự!");
+        }
+
+        comment.setContent(trimmedContent);
+        return cardCommentRepository.save(comment);
+    }
+
+    /**
+     * Story #51: Xóa bình luận của chính mình
+     */
+    @Override
+    @Transactional
+    public void deleteCardComment(Long commentId, User currentUser) {
+        CardComment comment = cardCommentRepository.findById(commentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bình luận với ID: " + commentId));
+
+        Card card = getCardById(comment.getCardId());
+        TaskList taskList = getTaskListOrThrow(card.getTaskListId());
+        boardPermissionService.checkEditPermission(taskList.getBoardId(), currentUser);
+
+        boolean isOwner = Objects.equals(comment.getUserId(), currentUser.getId());
+
+        if (!isOwner) {
+            throw new AccessDeniedException("Bạn không có quyền xóa bình luận này!");
+        }
+
+        cardCommentRepository.delete(comment);
+    }
+
+    /**
+     * Story #36: Đính kèm tệp vào thẻ
+     */
+    @Override
+    @Transactional
+    public CardAttachment addAttachment(Long cardId, MultipartFile file, User currentUser) {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("Vui lòng chọn tệp đính kèm!");
+        }
+
+        // Tối đa 10MB
+        if (file.getSize() > 10 * 1024 * 1024) {
+            throw new IllegalArgumentException("Dung lượng tệp đính kèm không được vượt quá 10MB!");
+        }
+
+        // Kiểm tra MIME type
+        String contentType = file.getContentType();
+        if (contentType == null || contentType.toLowerCase().contains("text/html") || contentType.toLowerCase().contains("javascript")) {
+            throw new IllegalArgumentException("MIME type không hợp lệ hoặc không an toàn!");
+        }
+
+        Card card = getCardById(cardId);
+        TaskList taskList = getTaskListOrThrow(card.getTaskListId());
+        boardPermissionService.checkEditPermission(taskList.getBoardId(), currentUser);
+
+        String originalFileName = StringUtils.cleanPath(
+                file.getOriginalFilename() != null ? file.getOriginalFilename() : "attachment.bin");
+
+        String fileExtension = "";
+        int extIndex = originalFileName.lastIndexOf(".");
+        if (extIndex >= 0) {
+            fileExtension = originalFileName.substring(extIndex).toLowerCase();
+        }
+
+        // Kiểm tra phần mở rộng tệp
+        java.util.List<String> allowedExtensions = java.util.Arrays.asList(".pdf", ".docx", ".xlsx", ".pptx", ".txt", ".jpg", ".jpeg", ".png", ".webp", ".zip", ".rar");
+        java.util.List<String> blockedExtensions = java.util.Arrays.asList(".html", ".htm", ".svg", ".js", ".jsp", ".exe", ".sh", ".bat");
+
+        if (blockedExtensions.contains(fileExtension)) {
+            throw new IllegalArgumentException("Định dạng tệp này không được phép tải lên để đảm bảo an toàn!");
+        }
+        
+        if (!allowedExtensions.contains(fileExtension)) {
+            throw new IllegalArgumentException("Định dạng tệp không được hỗ trợ! Vui lòng tải lên ảnh, tài liệu văn phòng hoặc file nén.");
+        }
+
+        String storedFileName = UUID.randomUUID().toString() + fileExtension;
+        Path attachmentDirPath = Paths.get(uploadDirConfig, "attachments");
+
+        try {
+            if (!Files.exists(attachmentDirPath)) {
+                Files.createDirectories(attachmentDirPath);
+            }
+            Path targetPath = attachmentDirPath.resolve(storedFileName);
+            try (InputStream inputStream = file.getInputStream()) {
+                Files.copy(inputStream, targetPath, StandardCopyOption.REPLACE_EXISTING);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Không thể lưu tệp đính kèm: " + e.getMessage(), e);
+        }
+
+        String fileUrl = "/uploads/attachments/" + storedFileName;
+
+        // Convention 6.14: set FK bằng Long field
+        CardAttachment attachment = CardAttachment.builder()
+                .cardId(cardId)
+                .fileUrl(fileUrl)
+                .fileName(originalFileName)
+                .uploadedBy(currentUser.getId())
+                .build();
+
+        CardAttachment savedAttachment = cardAttachmentRepository.save(attachment);
+        notifyCardWatchers(card, "đã đính kèm tệp '" + originalFileName + "' vào thẻ", currentUser);
+        
+        return savedAttachment;
+    }
+
+    /**
+     * Story #36: Xóa tệp đính kèm
+     */
+    @Override
+    @Transactional
+    public void deleteAttachment(Long attachmentId, User currentUser) {
+        CardAttachment attachment = cardAttachmentRepository.findById(attachmentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tệp đính kèm với ID: " + attachmentId));
+
+        Card card = getCardById(attachment.getCardId());
+        TaskList taskList = getTaskListOrThrow(card.getTaskListId());
+        boardPermissionService.checkEditPermission(taskList.getBoardId(), currentUser);
+
+        boolean isUploader = Objects.equals(attachment.getUploadedBy(), currentUser.getId());
+        boolean isBoardAdmin = boardMemberRepository.findByBoardIdAndUserId(taskList.getBoardId(), currentUser.getId())
+                .map(bm -> bm.getRole() == Role.ADMIN)
+                .orElse(false);
+
+        if (!isUploader && !isBoardAdmin) {
+            throw new AccessDeniedException("Bạn không có quyền xóa tệp đính kèm này!");
+        }
+
+        // Xóa file vật lý nếu có
+        try {
+            if (attachment.getFileUrl() != null && attachment.getFileUrl().startsWith("/uploads/")) {
+                String relativePath = attachment.getFileUrl().substring("/uploads/".length());
+                Path filePath = Paths.get(uploadDirConfig, relativePath);
+                Files.deleteIfExists(filePath);
+            }
+        } catch (IOException ignored) {
+            // Không block DB deletion nếu xóa file đĩa gặp trục trặc
+        }
+
+        cardAttachmentRepository.delete(attachment);
+    }
+
+    @Override
+    @Transactional
+    public void addCardLabel(Long cardId, Long labelId, User currentUser) {
+        Card card = getCardById(cardId);
+        TaskList taskList = getTaskListOrThrow(card.getTaskListId());
+        boardPermissionService.checkCardMemberOrLabelPermission(taskList.getBoardId(), currentUser);
+
+        if (!labelRepository.existsById(labelId)) {
+            throw new IllegalArgumentException("Không tìm thấy nhãn!");
+        }
+
+        if (cardLabelRepository.existsByCardIdAndLabelId(cardId, labelId)) {
+            throw new IllegalArgumentException("Nhãn đã được gán vào thẻ này!");
+        }
+
+        CardLabel cardLabel = CardLabel.builder()
+                .cardId(cardId)
+                .labelId(labelId)
+                .build();
+        cardLabelRepository.save(cardLabel);
+    }
+
+    @Override
+    @Transactional
+    public void removeCardLabel(Long cardId, Long labelId, User currentUser) {
+        Card card = getCardById(cardId);
+        TaskList taskList = getTaskListOrThrow(card.getTaskListId());
+        boardPermissionService.checkCardMemberOrLabelPermission(taskList.getBoardId(), currentUser);
+
+        if (!cardLabelRepository.existsByCardIdAndLabelId(cardId, labelId)) {
+            throw new ResourceNotFoundException("Nhãn không thuộc thẻ này!");
+        }
+        cardLabelRepository.deleteByCardIdAndLabelId(cardId, labelId);
     }
 
     @Override
